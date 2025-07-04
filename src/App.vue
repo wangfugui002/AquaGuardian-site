@@ -1,8 +1,6 @@
 <template>
   <div class="container">
-    <header class="header">
-      <h1>北京水污染模拟系统</h1>
-    </header>
+    <page-header :title="systemTitle"></page-header>
     
     <div class="map-container">
       <div id="map" style="width: 100%; height: 100%;"></div>
@@ -84,16 +82,19 @@
 import { ref, onMounted, reactive } from 'vue'
 import L from 'leaflet'
 import LakePollutionSimulation from './components/LakePollutionSimulation.vue'
+import PageHeader from './components/Header.vue'
 
 export default {
   name: 'App',
   components: {
-    LakePollutionSimulation
+    LakePollutionSimulation,
+    PageHeader
   },
   setup() {
     const map = ref(null)
     const loading = ref(true)
     const showLakeSimulation = ref(false)
+    const systemTitle = ref('环境风险分析与模拟系统')
     
     // 图层状态
     const layers = reactive({
@@ -203,37 +204,39 @@ export default {
     const getLayerStyle = (layerType) => {
       const styles = {
         districts: {
-          fillColor: '#3498db',
-          weight: 2,
-          opacity: 1,
-          color: '#2980b9',
-          fillOpacity: 0.1
+          fillColor: 'transparent',
+          weight: 2.5,
+          opacity: 0.8,
+          color: '#ffffff',
+          fillOpacity: 0,
+          dashArray: '5, 8'
         },
         waterLines: {
-          color: '#3498db',
-          weight: 3,
-          opacity: 0.8
+          color: '#64B5F6',
+          weight: 2.5,
+          opacity: 0.9
         },
         waterAreas: {
-          fillColor: '#3498db',
-          weight: 2,
-          opacity: 1,
-          color: '#2980b9',
-          fillOpacity: 0.3
+          fillColor: '#29B6F6',
+          weight: 1.5,
+          opacity: 0.9,
+          color: '#0288D1',
+          fillOpacity: 0.7
         },
         reservoirs: {
-          fillColor: '#e74c3c',
-          weight: 2,
-          opacity: 1,
-          color: '#c0392b',
-          fillOpacity: 0.6
+          fillColor: '#26C6DA',
+          weight: 1.5,
+          opacity: 0.9,
+          color: '#00ACC1',
+          fillOpacity: 0.8
         },
         settlements: {
-          fillColor: '#f39c12',
-          weight: 1,
+          radius: 6,
+          fillColor: '#FFF176',
+          color: '#ffffff',
+          weight: 1.5,
           opacity: 1,
-          color: '#e67e22',
-          fillOpacity: 0.8
+          fillOpacity: 0.9
         }
       }
       
@@ -293,6 +296,7 @@ export default {
       dataStats,
       showLakeSimulation,
       lakeSimulationRef,
+      systemTitle,
       toggleLayer,
       onSimulationUpdate
     }
