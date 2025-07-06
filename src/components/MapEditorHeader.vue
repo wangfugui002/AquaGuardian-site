@@ -2,18 +2,12 @@
   <header class="header">
     <div class="header-content">
       <div class="logo-container">
-        <!-- 水滴图标 -->
-        <div class="logo-icon">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="48" height="48">
-            <path fill="#29b6f6" d="M400,320c0,88.37-55.63,144-144,144S112,408.37,112,320c0-94.83,103.23-222.85,134.89-259.88a12,12,0,0,1,18.22,0C296.77,97.15,400,225.17,400,320Z"/>
-            <path fill="#0288d1" d="M344,328a72,72,0,0,1-72,72"/>
-            <path fill="#ffffff" opacity="0.6" d="M216,196a20,20,0,1,1,20-20A20,20,0,0,1,216,196Z"/>
-          </svg>
-        </div>
+        <!-- 返回按钮 -->
+        <router-link to="/" class="back-button" title="返回主页">
+          <img src="/icons/返回.png" alt="返回" width="32" height="32" />
+        </router-link>
       </div>
-      <router-link to="/" class="title-link">
-        <h1 class="title">{{ title }}</h1>
-      </router-link>
+      <h1 class="title">{{ title }}</h1>
       
       <!-- 前四个功能图标 - 紧跟标题 -->
       <div class="title-icons">
@@ -43,11 +37,11 @@
 
 <script>
 export default {
-  name: 'PageHeader',
+  name: 'MapEditorHeader',
   props: {
     title: {
       type: String,
-      default: '环境风险分析与模拟系统'
+      default: '电子地图编辑'
     }
   }
 }
@@ -78,11 +72,17 @@ export default {
   align-items: center;
 }
 
-.logo-icon {
+.back-button {
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 0.3rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.back-button:hover {
+  transform: translateX(-3px);
 }
 
 .title {
@@ -92,10 +92,6 @@ export default {
   font-weight: 600;
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
   letter-spacing: 1px;
-}
-
-.title-link {
-  text-decoration: none;
 }
 
 .title-icons {
