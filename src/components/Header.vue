@@ -12,7 +12,7 @@
         </div>
       </div>
       <router-link to="/" class="title-link">
-        <h1 class="title">{{ title }}</h1>
+      <h1 class="title">{{ title }}</h1>
       </router-link>
       
       <!-- 前四个功能图标 - 紧跟标题 -->

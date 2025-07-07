@@ -4,7 +4,7 @@
       <div class="logo-container">
         <!-- 返回按钮 -->
         <router-link to="/" class="back-button" title="返回主页">
-          <img src="/icons/返回.png" alt="返回" width="32" height="32" />
+          <img src="/icons/返回 (2).png" alt="返回" width="32" height="32" />
         </router-link>
       </div>
       <h1 class="title">{{ title }}</h1>
