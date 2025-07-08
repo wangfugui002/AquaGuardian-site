@@ -40,6 +40,7 @@ import { onMounted, onUnmounted, ref } from 'vue'
 import L from 'leaflet'
 import * as EsriLeaflet from 'esri-leaflet'
 import PredictionSimulationHeader from '../components/PredictionSimulationHeader.vue'
+import axios from 'axios'
 
 export default {
   name: 'PredictionSimulation',
@@ -49,11 +50,40 @@ export default {
   setup() {
     let map = null;
     const activeFeature = ref(null);
+    let reservoirLayer = null;
     
+    // 加载水库GeoJSON并添加Marker
+    const loadReservoirs = async () => {
+      try {
+        const res = await axios.get('/Beijing-GeoJson/北京市水库.json');
+        const geojson = res.data;
+        const icon = L.icon({
+          iconUrl: '/icons/水库.png',
+          iconSize: [32, 32],
+          iconAnchor: [16, 16],
+          popupAnchor: [0, -16]
+        });
+        reservoirLayer = L.geoJSON(geojson, {
+          pointToLayer: (feature, latlng) => {
+            return L.marker(latlng, { icon });
+          },
+          onEachFeature: (feature, layer) => {
+            if (feature.properties && feature.properties.name) {
+              layer.bindPopup('水库名称：' + feature.properties.name);
+            }
+          }
+        });
+        reservoirLayer.addTo(map);
+      } catch (e) {
+        console.error('水库数据加载失败', e);
+      }
+    };
+
     // 初始化地图
     const initMap = () => {
       map = L.map('prediction-map', {
         backgroundColor: '#ffffff', // 设置地图背景色为白色
+        zoomControl: false // 先禁用默认缩放控件
       }).setView([39.9042, 116.4074], 10);
       
       // 添加空白底图
@@ -70,7 +100,13 @@ export default {
         useCors: false // 如果遇到跨域问题，尝试设置为false
       }).addTo(map);
       
-      // 这里可以添加预测模拟相关的功能
+      // 在自定义位置添加缩放控件
+      setTimeout(() => {
+        L.control.zoom({ position: 'topleft' }).addTo(map);
+      }, 200);
+
+      // 加载水库图层
+      loadReservoirs();
     }
     
     // 激活功能
@@ -106,6 +142,9 @@ export default {
       // 组件卸载时移除地图以避免内存泄漏
       if (map) {
         map.remove();
+      }
+      if (reservoirLayer) {
+        reservoirLayer.remove();
       }
     })
     
@@ -149,6 +188,13 @@ export default {
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
   padding: 15px;
   z-index: 1000;
+}
+
+/* 缩放控件微调到功能栏右侧 */
+:deep(.leaflet-top.leaflet-left .leaflet-control-zoom) {
+  margin-left: 210px !important; /* 180px宽度+30px间距 */
+  margin-top: 30px !important;
+  z-index: 1100;
 }
 
 .sidebar-title {
