@@ -3,14 +3,19 @@
     <map-editor-header title="电子地图编辑"></map-editor-header>
     
     <div class="map-editor-content">
-      <div id="editor-map" class="editor-map"></div>
+      <div id="editor-map" class="editor-map" :class="{ 
+        'zoom-in-cursor': activeMapTool === 'zoomIn',
+        'zoom-out-cursor': activeMapTool === 'zoomOut',
+        'grab-cursor': activeMapTool === 'pan',
+        'grabbing-cursor': isPanning
+      }"></div>
       <!-- 自定义工具栏 -->
       <div class="custom-toolbar">
         <img src="/icons/打开mxd.png" alt="打开mxd" title="打开mxd" @click="openMxdFile" />
-        <img src="/icons/放大.png" alt="放大" title="放大" @click="zoomIn" />
-        <img src="/icons/缩小.png" alt="缩小" title="缩小" @click="zoomOut" />
+        <img src="/icons/放大.png" alt="放大" title="放大" @click="activateZoomIn" :class="{ 'active-tool': activeMapTool === 'zoomIn' }" />
+        <img src="/icons/缩小.png" alt="缩小" title="缩小" @click="activateZoomOut" :class="{ 'active-tool': activeMapTool === 'zoomOut' }" />
         <img src="/icons/全图.png" alt="全图" title="全图" @click="viewFullExtent" />
-        <img src="/icons/手.png" alt="平移" title="平移" />
+        <img src="/icons/手.png" alt="平移" title="平移" @click="activatePan" :class="{ 'active-tool': activeMapTool === 'pan' }" />
         <img src="/icons/选择要素.png" alt="选择要素" title="选择要素" />
         <img src="/icons/识别要素.png" alt="识别要素" title="识别要素" />
         <img src="/icons/左箭头.png" alt="返回上一视图" title="返回上一视图" />
@@ -109,6 +114,8 @@ const loading = ref(false)
 const mxdFileInput = ref(null)
 const currentMxdFile = ref(null)
 const showMxdPanel = ref(false)
+const activeMapTool = ref(null) // 当前激活的地图工具
+const isPanning = ref(false) // 是否正在平移中
 
 // MXD图层
 const mxdLayers = ref([]);
@@ -228,6 +235,122 @@ const zoomIn = () => {
   if (map.value) {
     map.value.zoomIn();
   }
+};
+
+// 激活放大工具
+const activateZoomIn = () => {
+  // 如果已经激活了放大工具，则取消激活
+  if (activeMapTool.value === 'zoomIn') {
+    deactivateMapTools();
+    return;
+  }
+  
+  deactivateMapTools();
+  activeMapTool.value = 'zoomIn';
+  
+  // 添加点击事件监听器
+  if (map.value) {
+    map.value.on('click', handleZoomInClick);
+  }
+};
+
+// 处理放大工具点击
+const handleZoomInClick = (e) => {
+  if (activeMapTool.value === 'zoomIn' && map.value) {
+    // 获取点击位置
+    const clickPoint = e.latlng;
+    
+    // 放大地图并将点击位置设为新的中心点
+    map.value.setView(clickPoint, map.value.getZoom() + 1);
+  }
+};
+
+// 激活缩小工具
+const activateZoomOut = () => {
+  // 如果已经激活了缩小工具，则取消激活
+  if (activeMapTool.value === 'zoomOut') {
+    deactivateMapTools();
+    return;
+  }
+  
+  deactivateMapTools();
+  activeMapTool.value = 'zoomOut';
+  
+  // 添加点击事件监听器
+  if (map.value) {
+    map.value.on('click', handleZoomOutClick);
+  }
+};
+
+// 处理缩小工具点击
+const handleZoomOutClick = (e) => {
+  if (activeMapTool.value === 'zoomOut' && map.value) {
+    // 获取点击位置
+    const clickPoint = e.latlng;
+    
+    // 缩小地图并将点击位置设为新的中心点
+    map.value.setView(clickPoint, map.value.getZoom() - 1);
+  }
+};
+
+// 激活平移工具
+const activatePan = () => {
+  // 如果已经激活了平移工具，则取消激活
+  if (activeMapTool.value === 'pan') {
+    deactivateMapTools();
+    return;
+  }
+  
+  deactivateMapTools();
+  activeMapTool.value = 'pan';
+  
+  // 启用拖动
+  if (map.value) {
+    map.value.dragging.enable();
+    
+    // 添加鼠标事件监听器
+    const mapElement = document.getElementById('editor-map');
+    if (mapElement) {
+      mapElement.addEventListener('mousedown', handlePanMouseDown);
+      mapElement.addEventListener('mouseup', handlePanMouseUp);
+      mapElement.addEventListener('mouseleave', handlePanMouseUp);
+    }
+  }
+};
+
+// 处理平移工具鼠标按下事件
+const handlePanMouseDown = () => {
+  if (activeMapTool.value === 'pan') {
+    isPanning.value = true;
+  }
+};
+
+// 处理平移工具鼠标松开事件
+const handlePanMouseUp = () => {
+  if (activeMapTool.value === 'pan') {
+    isPanning.value = false;
+  }
+};
+
+// 取消激活所有地图工具
+const deactivateMapTools = () => {
+  // 移除所有事件监听器
+  if (map.value) {
+    map.value.off('click', handleZoomInClick);
+    map.value.off('click', handleZoomOutClick);
+    
+    // 移除平移相关的鼠标事件监听器
+    const mapElement = document.getElementById('editor-map');
+    if (mapElement) {
+      mapElement.removeEventListener('mousedown', handlePanMouseDown);
+      mapElement.removeEventListener('mouseup', handlePanMouseUp);
+      mapElement.removeEventListener('mouseleave', handlePanMouseUp);
+    }
+  }
+  
+  // 重置状态
+  activeMapTool.value = null;
+  isPanning.value = false;
 };
 
 const zoomOut = () => {
@@ -616,6 +739,18 @@ onMounted(() => {
 })
 onUnmounted(() => {
   if (map.value) {
+    // 清理所有事件监听器
+    map.value.off('click', handleZoomInClick);
+    map.value.off('click', handleZoomOutClick);
+    
+    // 移除平移相关的鼠标事件监听器
+    const mapElement = document.getElementById('editor-map');
+    if (mapElement) {
+      mapElement.removeEventListener('mousedown', handlePanMouseDown);
+      mapElement.removeEventListener('mouseup', handlePanMouseUp);
+      mapElement.removeEventListener('mouseleave', handlePanMouseUp);
+    }
+    
     map.value.remove()
   }
 })
@@ -627,17 +762,29 @@ onUnmounted(() => {
   flex-direction: column;
   height: 100vh;
   width: 100%;
+  background: #ffffff; /* 确保容器没有背景 */
 }
 
 .map-editor-content {
   flex: 1;
   overflow: hidden;
   position: relative;
+  background-color: #f5f5f5; /* 替换原来的背景色 */
 }
 
 .editor-map {
   width: 100%;
   height: calc(100vh - 72px);
+  z-index: 1; /* 确保地图在最底层 */
+}
+
+/* 移除可能导致紫色方块的背景样式 */
+body {
+  background: #ffffff; /* 替换渐变背景 */
+}
+
+#app {
+  background: #ffffff; /* 确保app容器没有背景 */
 }
 
 .control-panel {
@@ -694,6 +841,30 @@ onUnmounted(() => {
 }
 .custom-toolbar img:hover {
   background: #e6f7ff;
+}
+.custom-toolbar img.active-tool {
+  background: #1890ff;
+  filter: brightness(1.2);
+}
+
+/* 放大镜鼠标样式 */
+.zoom-in-cursor {
+  cursor: zoom-in !important;
+}
+
+/* 缩小镜鼠标样式 */
+.zoom-out-cursor {
+  cursor: zoom-out !important;
+}
+
+/* 平移鼠标样式 - 准备抓取 */
+.grab-cursor {
+  cursor: grab !important;
+}
+
+/* 平移鼠标样式 - 抓取中 */
+.grabbing-cursor {
+  cursor: grabbing !important;
 }
 
 /* MXD文件处理相关样式 */
