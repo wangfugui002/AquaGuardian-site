@@ -7,7 +7,9 @@
         'zoom-in-cursor': activeMapTool === 'zoomIn',
         'zoom-out-cursor': activeMapTool === 'zoomOut',
         'grab-cursor': activeMapTool === 'pan',
-        'grabbing-cursor': isPanning
+        'grabbing-cursor': isPanning,
+        'pointer-cursor': activeMapTool === 'selectFeature',
+        'info-cursor': activeMapTool === 'identifyFeature'
       }"></div>
       <!-- 自定义工具栏 -->
       <div class="custom-toolbar">
@@ -16,10 +18,22 @@
         <img src="/icons/缩小.png" alt="缩小" title="缩小" @click="activateZoomOut" :class="{ 'active-tool': activeMapTool === 'zoomOut' }" />
         <img src="/icons/全图.png" alt="全图" title="全图" @click="viewFullExtent" />
         <img src="/icons/手.png" alt="平移" title="平移" @click="activatePan" :class="{ 'active-tool': activeMapTool === 'pan' }" />
-        <img src="/icons/选择要素.png" alt="选择要素" title="选择要素" />
-        <img src="/icons/识别要素.png" alt="识别要素" title="识别要素" />
-        <img src="/icons/左箭头.png" alt="返回上一视图" title="返回上一视图" />
-        <img src="/icons/右箭头.png" alt="转至下一视图" title="转至下一视图" />
+        <img src="/icons/选择要素.png" alt="选择要素" title="选择要素" @click="activateSelectFeature" :class="{ 'active-tool': activeMapTool === 'selectFeature' }" />
+        <img src="/icons/识别要素.png" alt="识别要素" title="识别要素" @click="activateIdentifyFeature" :class="{ 'active-tool': activeMapTool === 'identifyFeature' }" />
+        <img 
+          src="/icons/左箭头.png" 
+          alt="返回上一视图" 
+          title="返回上一视图" 
+          @click="goToPreviousView" 
+          :class="{ 'disabled-tool': !canGoBack }"
+        />
+        <img 
+          src="/icons/右箭头.png" 
+          alt="转至下一视图" 
+          title="转至下一视图" 
+          @click="goToNextView" 
+          :class="{ 'disabled-tool': !canGoForward }"
+        />
       </div>
       <!-- 加载提示 -->
       <div class="loading-overlay" v-if="loading">
@@ -104,7 +118,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, reactive } from 'vue'
+import { ref, onMounted, onUnmounted, reactive, computed, watch } from 'vue'
 import * as L from 'leaflet'
 import MapEditorHeader from '../components/MapEditorHeader.vue'
 import 'leaflet/dist/leaflet.css'
@@ -116,6 +130,125 @@ const currentMxdFile = ref(null)
 const showMxdPanel = ref(false)
 const activeMapTool = ref(null) // 当前激活的地图工具
 const isPanning = ref(false) // 是否正在平移中
+
+// 地图视图历史记录
+const mapHistory = ref([])
+const currentHistoryIndex = ref(-1)
+
+// 计算属性：是否可以返回上一视图
+const canGoBack = computed(() => {
+  return currentHistoryIndex.value > 0;
+});
+
+// 计算属性：是否可以前进到下一视图
+const canGoForward = computed(() => {
+  return currentHistoryIndex.value < mapHistory.value.length - 1;
+});
+
+// 添加视图到历史记录
+const addToHistory = (view) => {
+  // 如果当前不在历史记录的末尾，则清除当前位置之后的历史记录
+  if (currentHistoryIndex.value < mapHistory.value.length - 1) {
+    mapHistory.value = mapHistory.value.slice(0, currentHistoryIndex.value + 1);
+  }
+  
+  // 添加新的视图状态到历史记录
+  mapHistory.value.push(view);
+  currentHistoryIndex.value = mapHistory.value.length - 1;
+  
+  console.log(`添加视图到历史记录，当前索引：${currentHistoryIndex.value}，总历史记录：${mapHistory.value.length}`);
+};
+
+// 返回上一视图
+const goToPreviousView = () => {
+  if (!canGoBack.value || !map.value) return;
+  
+  currentHistoryIndex.value--;
+  const previousView = mapHistory.value[currentHistoryIndex.value];
+  
+  // 应用历史视图状态，但不记录这次变化
+  applyViewState(previousView, false);
+  
+  console.log(`返回到历史视图，当前索引：${currentHistoryIndex.value}`);
+};
+
+// 前进到下一视图
+const goToNextView = () => {
+  if (!canGoForward.value || !map.value) return;
+  
+  currentHistoryIndex.value++;
+  const nextView = mapHistory.value[currentHistoryIndex.value];
+  
+  // 应用历史视图状态，但不记录这次变化
+  applyViewState(nextView, false);
+  
+  console.log(`前进到历史视图，当前索引：${currentHistoryIndex.value}`);
+};
+
+// 应用视图状态
+const applyViewState = (viewState, recordHistory = true) => {
+  if (!map.value) return;
+  
+  // 设置地图中心点和缩放级别
+  map.value.setView(viewState.center, viewState.zoom, {
+    animate: true,
+    duration: 0.5
+  });
+  
+  // 如果需要记录这次视图变化，则添加到历史记录
+  if (recordHistory) {
+    // 延迟添加到历史记录，确保动画完成后的状态
+    setTimeout(() => {
+      const currentView = getCurrentViewState();
+      addToHistory(currentView);
+    }, 100);
+  }
+};
+
+// 获取当前视图状态
+const getCurrentViewState = () => {
+  if (!map.value) return null;
+  
+  return {
+    center: map.value.getCenter(),
+    zoom: map.value.getZoom(),
+    timestamp: Date.now()
+  };
+};
+
+// 监听地图移动和缩放事件
+const setupMapEventListeners = () => {
+  if (!map.value) return;
+  
+  // 防抖函数
+  let timeoutId;
+  const debounce = (callback, delay = 300) => {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(callback, delay);
+  };
+  
+  // 监听地图移动结束事件
+  map.value.on('moveend', () => {
+    // 只有当用户交互导致的视图变化才记录历史
+    if (map.value._loaded && !map.value._animatingZoom) {
+      debounce(() => {
+        const currentView = getCurrentViewState();
+        addToHistory(currentView);
+      });
+    }
+  });
+  
+  // 监听地图缩放结束事件
+  map.value.on('zoomend', () => {
+    // 只有当用户交互导致的视图变化才记录历史
+    if (map.value._loaded && !map.value._animatingZoom) {
+      debounce(() => {
+        const currentView = getCurrentViewState();
+        addToHistory(currentView);
+      });
+    }
+  });
+};
 
 // MXD图层
 const mxdLayers = ref([]);
@@ -228,6 +361,17 @@ const mockMxdLayerData = [
   }).addTo(map.value);
   
   console.log('地图初始化完成，当前中心点:', map.value.getCenter());
+  
+  // 初始化地图后记录初始视图状态
+  setTimeout(() => {
+    const initialView = getCurrentViewState();
+    if (initialView) {
+      addToHistory(initialView);
+    }
+    
+    // 设置地图事件监听
+    setupMapEventListeners();
+  }, 500);
 };
 
 // 地图缩放功能
@@ -332,12 +476,447 @@ const handlePanMouseUp = () => {
   }
 };
 
+// 激活选择要素工具
+const activateSelectFeature = () => {
+  // 如果已经激活了选择要素工具，则取消激活
+  if (activeMapTool.value === 'selectFeature') {
+    deactivateMapTools();
+    return;
+  }
+  
+  deactivateMapTools();
+  activeMapTool.value = 'selectFeature';
+  
+  // 添加点击事件监听器
+  if (map.value) {
+    map.value.on('click', handleSelectFeatureClick);
+  }
+};
+
+// 处理选择要素工具点击
+const handleSelectFeatureClick = (e) => {
+  if (activeMapTool.value !== 'selectFeature' || !map.value) return;
+  
+  const clickPoint = e.latlng;
+  console.log(`选择要素点击位置: ${clickPoint.lat}, ${clickPoint.lng}`);
+  
+  // 在点击位置进行空间查询
+  const radius = 10; // 像素半径
+  const point = e.containerPoint;
+  let selectedFeatures = [];
+  
+  // 遍历所有图层，查找点击位置的要素
+  Object.values(mxdLayerObjects.value).forEach(layer => {
+    if (layer && layer.eachLayer) {
+      layer.eachLayer(featureLayer => {
+        // 如果是GeoJSON图层
+        if (featureLayer.feature) {
+          const layerPoint = map.value.latLngToContainerPoint(featureLayer.getBounds().getCenter());
+          const distance = point.distanceTo(layerPoint);
+          
+          if (distance <= radius) {
+            selectedFeatures.push({
+              layer: featureLayer,
+              feature: featureLayer.feature,
+              distance: distance
+            });
+          }
+        }
+      });
+    }
+  });
+  
+  // 按距离排序
+  selectedFeatures.sort((a, b) => a.distance - b.distance);
+  
+  // 处理选中的要素
+  if (selectedFeatures.length > 0) {
+    const selected = selectedFeatures[0];
+    
+    // 高亮显示选中的要素
+    highlightFeature(selected.layer);
+    
+    // 显示要素属性
+    showFeatureProperties(selected.feature);
+    
+    console.log('选中要素:', selected.feature);
+  } else {
+    console.log('未选中任何要素');
+    // 清除之前的高亮
+    clearHighlightedFeatures();
+  }
+};
+
+// 高亮显示要素
+const highlightFeature = (layer) => {
+  // 清除之前的高亮
+  clearHighlightedFeatures();
+  
+  // 保存原始样式
+  if (!layer._originalStyle) {
+    layer._originalStyle = {
+      weight: layer.options.weight,
+      color: layer.options.color,
+      opacity: layer.options.opacity,
+      fillOpacity: layer.options.fillOpacity
+    };
+  }
+  
+  // 应用高亮样式
+  layer.setStyle({
+    weight: 3,
+    color: '#ff7800',
+    opacity: 1,
+    fillOpacity: 0.7
+  });
+  
+  // 将图层置于顶层
+  if (layer.bringToFront) {
+    layer.bringToFront();
+  }
+  
+  // 保存当前高亮的图层
+  highlightedLayer.value = layer;
+};
+
+// 清除高亮显示的要素
+const clearHighlightedFeatures = () => {
+  if (highlightedLayer.value) {
+    // 恢复原始样式
+    if (highlightedLayer.value._originalStyle) {
+      highlightedLayer.value.setStyle(highlightedLayer.value._originalStyle);
+    }
+    highlightedLayer.value = null;
+  }
+};
+
+// 显示要素属性
+const showFeatureProperties = (feature) => {
+  if (!feature || !feature.properties) return;
+  
+  // 创建属性面板
+  let propertiesPanel = document.getElementById('feature-properties-panel');
+  
+  // 如果面板不存在，则创建一个
+  if (!propertiesPanel) {
+    propertiesPanel = document.createElement('div');
+    propertiesPanel.id = 'feature-properties-panel';
+    propertiesPanel.className = 'feature-properties-panel';
+    document.querySelector('.map-editor-content').appendChild(propertiesPanel);
+  }
+  
+  // 构建属性内容
+  let content = '<div class="properties-header"><h3>要素属性</h3><span class="close-btn" onclick="document.getElementById(\'feature-properties-panel\').style.display=\'none\'">×</span></div>';
+  content += '<div class="properties-content">';
+  
+  // 添加属性列表
+  for (const key in feature.properties) {
+    if (Object.prototype.hasOwnProperty.call(feature.properties, key)) {
+      content += `<div class="property-item"><span class="property-name">${key}:</span><span class="property-value">${feature.properties[key]}</span></div>`;
+    }
+  }
+  
+  content += '</div>';
+  
+  // 更新面板内容
+  propertiesPanel.innerHTML = content;
+  propertiesPanel.style.display = 'block';
+};
+
+// 激活识别要素工具
+const activateIdentifyFeature = () => {
+  // 如果已经激活了识别要素工具，则取消激活
+  if (activeMapTool.value === 'identifyFeature') {
+    deactivateMapTools();
+    return;
+  }
+  
+  deactivateMapTools();
+  activeMapTool.value = 'identifyFeature';
+  
+  // 添加点击事件监听器
+  if (map.value) {
+    map.value.on('click', handleIdentifyFeatureClick);
+  }
+};
+
+// 处理识别要素工具点击
+const handleIdentifyFeatureClick = (e) => {
+  if (activeMapTool.value !== 'identifyFeature' || !map.value) return;
+  
+  const clickPoint = e.latlng;
+  console.log(`识别要素点击位置: ${clickPoint.lat}, ${clickPoint.lng}`);
+  
+  // 在点击位置查询要素信息
+  const radius = 15; // 增加像素半径以便更容易选中要素
+  const point = e.containerPoint;
+  let features = [];
+  
+  // 遍历所有图层，查找点击位置的要素
+  Object.values(mxdLayerObjects.value).forEach(layer => {
+    if (layer && layer.eachLayer) {
+      layer.eachLayer(featureLayer => {
+        // 处理不同类型的要素
+        if (featureLayer.feature) {
+          let isInRange = false;
+          
+          // 根据要素类型进行不同的空间查询
+          const geomType = featureLayer.feature.geometry.type;
+          
+          if (geomType === 'Point') {
+            // 点要素 - 直接计算点到点的距离
+            const layerPoint = map.value.latLngToContainerPoint(
+              L.latLng(
+                featureLayer.feature.geometry.coordinates[1],
+                featureLayer.feature.geometry.coordinates[0]
+              )
+            );
+            isInRange = point.distanceTo(layerPoint) <= radius;
+          } 
+          else if (geomType === 'LineString' || geomType === 'MultiLineString') {
+            // 线要素 - 检查点到线的最短距离
+            try {
+              // 获取线的所有点
+              let coords = featureLayer.feature.geometry.coordinates;
+              if (geomType === 'LineString') {
+                coords = [coords]; // 包装成MultiLineString格式以统一处理
+              }
+              
+              // 检查每条线
+              for (const lineCoords of coords) {
+                for (let i = 0; i < lineCoords.length - 1; i++) {
+                  const p1 = map.value.latLngToContainerPoint(
+                    L.latLng(lineCoords[i][1], lineCoords[i][0])
+                  );
+                  const p2 = map.value.latLngToContainerPoint(
+                    L.latLng(lineCoords[i+1][1], lineCoords[i+1][0])
+                  );
+                  
+                  // 计算点到线段的距离
+                  const distance = pointToLineDistance(point, p1, p2);
+                  if (distance <= radius) {
+                    isInRange = true;
+                    break;
+                  }
+                }
+                if (isInRange) break;
+              }
+            } catch (err) {
+              console.error('计算线要素距离时出错:', err);
+            }
+          } 
+          else if (geomType === 'Polygon' || geomType === 'MultiPolygon') {
+            // 面要素 - 检查点是否在面内或接近面边界
+            try {
+              // 首先检查点是否在多边形内
+              if (featureLayer.getBounds && featureLayer.getBounds().contains(clickPoint)) {
+                isInRange = true;
+              } else {
+                // 如果不在多边形内，检查是否接近边界
+                let coords = featureLayer.feature.geometry.coordinates;
+                if (geomType === 'Polygon') {
+                  coords = [coords]; // 包装成MultiPolygon格式以统一处理
+                }
+                
+                // 检查每个多边形的每个环
+                outerLoop: for (const polygon of coords) {
+                  for (const ring of polygon) {
+                    for (let i = 0; i < ring.length - 1; i++) {
+                      const p1 = map.value.latLngToContainerPoint(
+                        L.latLng(ring[i][1], ring[i][0])
+                      );
+                      const p2 = map.value.latLngToContainerPoint(
+                        L.latLng(ring[i+1][1], ring[i+1][0])
+                      );
+                      
+                      // 计算点到边界线段的距离
+                      const distance = pointToLineDistance(point, p1, p2);
+                      if (distance <= radius) {
+                        isInRange = true;
+                        break outerLoop;
+                      }
+                    }
+                  }
+                }
+              }
+            } catch (err) {
+              console.error('计算面要素距离时出错:', err);
+            }
+          }
+          
+          if (isInRange) {
+            // 计算中心点距离用于排序
+            let centerDistance = Infinity;
+            try {
+              if (featureLayer.getBounds) {
+                const center = featureLayer.getBounds().getCenter();
+                const centerPoint = map.value.latLngToContainerPoint(center);
+                centerDistance = point.distanceTo(centerPoint);
+              }
+            } catch (err) {
+              console.error('计算中心距离时出错:', err);
+            }
+            
+            features.push({
+              layer: featureLayer,
+              feature: featureLayer.feature,
+              distance: centerDistance,
+              type: geomType
+            });
+          }
+        }
+      });
+    }
+  });
+  
+  // 按距离排序
+  features.sort((a, b) => a.distance - b.distance);
+  
+  // 显示要素信息
+  if (features.length > 0) {
+    const feature = features[0].feature;
+    
+    // 创建更详细的弹出框内容
+    const popupContent = createEnhancedPopupContent(feature, features[0].type);
+    
+    // 在点击位置显示弹出框
+    L.popup({
+      maxWidth: 300,
+      maxHeight: 300,
+      autoPan: true,
+      className: 'feature-popup'
+    })
+      .setLatLng(clickPoint)
+      .setContent(popupContent)
+      .openOn(map.value);
+    
+    console.log('识别要素:', feature);
+  } else {
+    console.log('未识别到任何要素');
+  }
+};
+
+// 计算点到线段的距离
+const pointToLineDistance = (p, p1, p2) => {
+  const x = p.x;
+  const y = p.y;
+  const x1 = p1.x;
+  const y1 = p1.y;
+  const x2 = p2.x;
+  const y2 = p2.y;
+  
+  // 线段长度的平方
+  const l2 = (x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1);
+  
+  // 如果线段实际上是一个点
+  if (l2 === 0) return Math.sqrt((x - x1) * (x - x1) + (y - y1) * (y - y1));
+  
+  // 计算点在线段上的投影比例 t
+  let t = ((x - x1) * (x2 - x1) + (y - y1) * (y2 - y1)) / l2;
+  
+  // 将 t 限制在 [0, 1] 范围内，以获取线段上的最近点
+  t = Math.max(0, Math.min(1, t));
+  
+  // 计算线段上最近点的坐标
+  const projectionX = x1 + t * (x2 - x1);
+  const projectionY = y1 + t * (y2 - y1);
+  
+  // 计算点到投影点的距离
+  return Math.sqrt((x - projectionX) * (x - projectionX) + (y - projectionY) * (y - projectionY));
+};
+
+// 创建增强的弹出框内容
+const createEnhancedPopupContent = (feature, geomType) => {
+  if (!feature || !feature.properties) return '<div class="popup-content">无要素信息</div>';
+  
+  let content = '<div class="popup-content">';
+  
+  // 添加要素类型标题
+  let typeTitle = '未知类型';
+  if (geomType === 'Point') typeTitle = '点要素';
+  else if (geomType === 'LineString' || geomType === 'MultiLineString') typeTitle = '线要素';
+  else if (geomType === 'Polygon' || geomType === 'MultiPolygon') typeTitle = '面要素';
+  
+  content += `<div class="popup-header"><strong>${typeTitle}</strong></div>`;
+  content += '<div class="popup-body">';
+  
+  // 添加属性表格
+  content += '<table class="popup-table">';
+  content += '<tr><th>属性</th><th>值</th></tr>';
+  
+  // 添加属性列表
+  for (const key in feature.properties) {
+    if (Object.prototype.hasOwnProperty.call(feature.properties, key)) {
+      const value = feature.properties[key] || '空';
+      content += `<tr><td>${key}</td><td>${value}</td></tr>`;
+    }
+  }
+  
+  content += '</table>';
+  content += '</div></div>';
+  return content;
+};
+
+// 添加弹出框样式
+const addPopupStyles = () => {
+  // 检查是否已添加样式
+  if (!document.getElementById('popup-styles')) {
+    const styleElement = document.createElement('style');
+    styleElement.id = 'popup-styles';
+    styleElement.textContent = `
+      .feature-popup .leaflet-popup-content-wrapper {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 3px 14px rgba(0,0,0,0.2);
+      }
+      .feature-popup .leaflet-popup-content {
+        margin: 10px;
+        min-width: 200px;
+      }
+      .popup-content {
+        font-family: Arial, sans-serif;
+      }
+      .popup-header {
+        background: #f0f0f0;
+        padding: 5px 8px;
+        border-radius: 4px 4px 0 0;
+        font-size: 14px;
+        border-bottom: 1px solid #ddd;
+        margin-bottom: 8px;
+      }
+      .popup-body {
+        padding: 0 5px;
+      }
+      .popup-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12px;
+      }
+      .popup-table th, .popup-table td {
+        padding: 4px 6px;
+        border-bottom: 1px solid #eee;
+        text-align: left;
+      }
+      .popup-table th {
+        background: #f9f9f9;
+        font-weight: bold;
+      }
+    `;
+    document.head.appendChild(styleElement);
+  }
+};
+
+// 存储当前高亮的图层
+const highlightedLayer = ref(null);
+
 // 取消激活所有地图工具
 const deactivateMapTools = () => {
   // 移除所有事件监听器
   if (map.value) {
     map.value.off('click', handleZoomInClick);
     map.value.off('click', handleZoomOutClick);
+    map.value.off('click', handleSelectFeatureClick);
+    map.value.off('click', handleIdentifyFeatureClick);
     
     // 移除平移相关的鼠标事件监听器
     const mapElement = document.getElementById('editor-map');
@@ -345,6 +924,18 @@ const deactivateMapTools = () => {
       mapElement.removeEventListener('mousedown', handlePanMouseDown);
       mapElement.removeEventListener('mouseup', handlePanMouseUp);
       mapElement.removeEventListener('mouseleave', handlePanMouseUp);
+    }
+    
+    // 清除高亮的要素
+    clearHighlightedFeatures();
+    
+    // 关闭任何打开的弹出框
+    map.value.closePopup();
+    
+    // 隐藏属性面板
+    const propertiesPanel = document.getElementById('feature-properties-panel');
+    if (propertiesPanel) {
+      propertiesPanel.style.display = 'none';
     }
   }
   
@@ -735,6 +1326,7 @@ const getLayerIconStyle = (layer) => {
 onMounted(() => {
   setTimeout(() => {
     initMap()
+    addPopupStyles()
   }, 100)
 })
 onUnmounted(() => {
@@ -742,6 +1334,10 @@ onUnmounted(() => {
     // 清理所有事件监听器
     map.value.off('click', handleZoomInClick);
     map.value.off('click', handleZoomOutClick);
+    map.value.off('click', handleSelectFeatureClick);
+    map.value.off('click', handleIdentifyFeatureClick);
+    map.value.off('moveend');
+    map.value.off('zoomend');
     
     // 移除平移相关的鼠标事件监听器
     const mapElement = document.getElementById('editor-map');
@@ -846,6 +1442,14 @@ body {
   background: #1890ff;
   filter: brightness(1.2);
 }
+.custom-toolbar img.disabled-tool {
+  opacity: 0.4;
+  cursor: default;
+  filter: grayscale(100%);
+}
+.custom-toolbar img.disabled-tool:hover {
+  background: transparent;
+}
 
 /* 放大镜鼠标样式 */
 .zoom-in-cursor {
@@ -865,6 +1469,16 @@ body {
 /* 平移鼠标样式 - 抓取中 */
 .grabbing-cursor {
   cursor: grabbing !important;
+}
+
+/* 选择要素鼠标样式 */
+.pointer-cursor {
+  cursor: pointer !important;
+}
+
+/* 识别要素鼠标样式 */
+.info-cursor {
+  cursor: help !important;
 }
 
 /* MXD文件处理相关样式 */
@@ -1044,5 +1658,74 @@ body {
   justify-content: space-between;
   margin-bottom: 5px;
   font-size: 12px;
+}
+
+/* 要素属性面板样式 */
+.feature-properties-panel {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+  width: 300px;
+  max-height: 400px;
+  overflow-y: auto;
+  z-index: 1000;
+  display: none;
+}
+
+.properties-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 15px;
+  background: #f0f0f0;
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+  border-bottom: 1px solid #ddd;
+}
+
+.properties-header h3 {
+  margin: 0;
+  font-size: 16px;
+  color: #333;
+}
+
+.close-btn {
+  cursor: pointer;
+  font-size: 20px;
+  color: #666;
+}
+
+.properties-content {
+  padding: 10px 15px;
+}
+
+.property-item {
+  margin-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.property-name {
+  font-weight: bold;
+  color: #555;
+  margin-right: 10px;
+}
+
+.property-value {
+  color: #333;
+}
+
+/* 弹出框样式 */
+.popup-content {
+  font-size: 12px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.popup-content div {
+  margin-bottom: 5px;
 }
 </style> 
