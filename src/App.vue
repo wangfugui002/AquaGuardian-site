@@ -17,5 +17,6 @@ export default {
   margin: 0;
   padding: 0;
   overflow: hidden;
+  background-color: #ffffff; /* 添加白色背景 */
 }
 </style> 
