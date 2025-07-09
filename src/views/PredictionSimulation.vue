@@ -176,6 +176,23 @@
           <div class="flood-section-content">
             <form class="flood-form">
               <div class="form-group">
+                <label style="font-weight:bold;display:flex;align-items:center;margin-bottom:10px;">
+                  <svg style="width:18px;height:18px;margin-right:6px;vertical-align:middle;" viewBox="0 0 24 24"><path fill="#90caf9" d="M3 5v14h18V5H3zm16 12H5V7h14v10z"/></svg>
+                  叠加分析图层
+                </label>
+                <div style="display:flex;flex-direction:column;gap:10px;">
+                  <label style="display:flex;align-items:center;gap:8px;">
+                    <input type="checkbox" v-model="floodParams.overlayLayers.resident" /> 居民点分布
+                  </label>
+                  <label style="display:flex;align-items:center;gap:8px;">
+                    <input type="checkbox" v-model="floodParams.overlayLayers.road" /> 道路网络
+                  </label>
+                  <label style="display:flex;align-items:center;gap:8px;">
+                    <input type="checkbox" v-model="floodParams.overlayLayers.farmland" /> 农田区域
+                  </label>
+                </div>
+              </div>
+              <div class="form-group">
                 <label for="reservoir">选择水库</label>
                 <select id="reservoir" v-model="floodParams.selectedReservoir" class="flood-select">
                   <option value="" disabled>请选择水库</option>
@@ -186,29 +203,16 @@
               </div>
               
               <div class="form-group">
-                <label for="waterLevel">水位高度 (米)</label>
+                <label for="bufferDistance">缓冲区距离 (米)</label>
                 <div class="slider-container">
-                  <input type="range" id="waterLevel" v-model="floodParams.waterLevel" min="100" max="120" step="0.5" class="flood-slider" />
-                  <span class="slider-value">{{ floodParams.waterLevel }}m</span>
+                  <input type="range" id="bufferDistance" v-model="floodParams.bufferDistance" min="0" max="5000" step="100" class="flood-slider" />
+                  <span class="slider-value">{{ floodParams.bufferDistance }}米</span>
                 </div>
               </div>
-              
               <div class="form-group">
-                <label for="floodDuration">模拟持续时间 (小时)</label>
-                <div class="slider-container">
-                  <input type="range" id="floodDuration" v-model="floodParams.duration" min="1" max="72" step="1" class="flood-slider" />
-                  <span class="slider-value">{{ floodParams.duration }}h</span>
-                </div>
+                <label for="simWaterLevel">模拟水位 (米)</label>
+                <input id="simWaterLevel" v-model="floodParams.simWaterLevel" type="number" class="flood-select" placeholder="请输入模拟水位" />
               </div>
-              
-              <div class="form-group">
-                <label for="rainfall">降雨量 (mm/h)</label>
-                <div class="slider-container">
-                  <input type="range" id="rainfall" v-model="floodParams.rainfall" min="0" max="50" step="1" class="flood-slider" />
-                  <span class="slider-value">{{ floodParams.rainfall }}mm/h</span>
-                </div>
-              </div>
-              
               <div class="form-actions">
                 <button type="button" class="btn-run" @click="runFloodSimulation">运行模拟</button>
                 <button type="button" class="btn-reset" @click="resetFloodParams">重置参数</button>
@@ -293,7 +297,7 @@
 </template>
 
 <script>
-import { onMounted, onUnmounted, ref, nextTick } from 'vue'
+import { onMounted, onUnmounted, ref, nextTick, watch } from 'vue'
 import L from 'leaflet'
 import * as EsriLeaflet from 'esri-leaflet'
 import PredictionSimulationHeader from '../components/PredictionSimulationHeader.vue'
@@ -317,6 +321,37 @@ export default {
     const monitoringChartRef = ref(null);
     let chartInstance = null;
     let monitoringChartInstance = null;
+    
+    // 水库淹没模拟相关状态
+    const floodParams = ref({
+      selectedReservoir: '',
+      bufferDistance: 1000, // 缓冲区距离
+      simWaterLevel: 105, // 模拟水位
+      duration: 24, // 模拟持续时间
+      rainfall: 10, // 降雨量
+      overlayLayers: { // 新增叠加分析图层状态
+        resident: false,
+        road: false,
+        farmland: false
+      }
+    });
+    
+    const floodResults = ref({
+      area: 0,
+      maxDepth: 0,
+      affectedSettlements: 0,
+      affectedPopulation: 0,
+      affectedFarmland: 0,
+      impactLevel: 'low',
+      impactAnalysis: ''
+    });
+    
+    const floodSimulationActive = ref(false);
+    const activeTab = ref('depth');
+    const depthChartRef = ref(null);
+    const timeChartRef = ref(null);
+    let depthChartInstance = null;
+    let timeChartInstance = null;
     const toggleReservoirDetail = () => {
       showReservoirDetail.value = !showReservoirDetail.value;
     };
@@ -536,6 +571,199 @@ export default {
     const toggleWarningDetail = () => {
       showWarningDetail.value = !showWarningDetail.value;
     };
+    
+    // 水库淹没模拟相关方法
+    const runFloodSimulation = () => {
+      if (!floodParams.value.selectedReservoir) {
+        alert('请先选择水库');
+        return;
+      }
+      
+      // 模拟计算淹没结果
+      const baseArea = 50 + Math.random() * 100;
+      const baseDepth = 2 + Math.random() * 5;
+      const waterLevelFactor = (floodParams.value.simWaterLevel - 100) / 20;
+      const rainfallFactor = floodParams.value.rainfall / 50;
+      
+      floodResults.value = {
+        area: baseArea * (1 + waterLevelFactor + rainfallFactor),
+        maxDepth: baseDepth * (1 + waterLevelFactor),
+        affectedSettlements: Math.floor(5 + Math.random() * 15),
+        affectedPopulation: Math.floor(1000 + Math.random() * 5000),
+        affectedFarmland: baseArea * 0.3 * (1 + waterLevelFactor),
+        impactLevel: getImpactLevel(waterLevelFactor + rainfallFactor),
+        impactAnalysis: generateImpactAnalysis(waterLevelFactor + rainfallFactor)
+      };
+      
+      floodSimulationActive.value = true;
+      
+      // 初始化图表
+      nextTick(() => {
+        initFloodCharts();
+      });
+    };
+    
+    const resetFloodParams = () => {
+      floodParams.value = {
+        selectedReservoir: '',
+        bufferDistance: 1000, // 缓冲区距离
+        simWaterLevel: 105, // 模拟水位
+        duration: 24, // 模拟持续时间
+        rainfall: 10, // 降雨量
+        overlayLayers: { // 重置叠加分析图层状态
+          resident: false,
+          road: false,
+          farmland: false
+        }
+      };
+      floodSimulationActive.value = false;
+    };
+    
+    const getImpactLevel = (factor) => {
+      if (factor < 0.5) return 'low';
+      if (factor < 1.0) return 'medium';
+      return 'high';
+    };
+    
+    const getImpactLevelClass = (level) => {
+      switch (level) {
+        case 'low': return 'impact-low';
+        case 'medium': return 'impact-medium';
+        case 'high': return 'impact-high';
+        default: return 'impact-low';
+      }
+    };
+    
+    const getImpactLevelText = (level) => {
+      switch (level) {
+        case 'low': return '低风险';
+        case 'medium': return '中风险';
+        case 'high': return '高风险';
+        default: return '低风险';
+      }
+    };
+    
+    const generateImpactAnalysis = (factor) => {
+      if (factor < 0.5) {
+        return '当前淹没情况对周边环境影响较小，主要影响低洼农田和部分道路。建议加强监测，做好防洪准备。';
+      } else if (factor < 1.0) {
+        return '淹没范围较大，可能影响部分居民区和重要基础设施。需要启动应急预案，组织人员疏散。';
+      } else {
+        return '淹没情况严重，可能造成重大损失。建议立即启动最高级别应急响应，全面组织救援和疏散工作。';
+      }
+    };
+    
+    const initFloodCharts = async () => {
+      // 深度分布图表
+      if (activeTab.value === 'depth' && depthChartRef.value) {
+        if (!depthChartInstance) {
+          depthChartInstance = echarts.init(depthChartRef.value);
+        }
+        
+        const depthOption = {
+          backgroundColor: '#fff',
+          tooltip: { trigger: 'axis' },
+          legend: { data: ['淹没深度分布'], textStyle: { color: '#333' } },
+          grid: { left: '3%', right: '4%', bottom: '3%', top: '15%', containLabel: true },
+          xAxis: {
+            type: 'category',
+            data: ['0-1m', '1-2m', '2-3m', '3-4m', '4-5m', '5m以上'],
+            axisLine: { lineStyle: { color: '#666' } },
+            axisLabel: { color: '#333' }
+          },
+          yAxis: {
+            type: 'value',
+            name: '面积 (km²)',
+            axisLine: { lineStyle: { color: '#666' } },
+            axisLabel: { color: '#333' },
+            splitLine: { lineStyle: { color: '#eee' } }
+          },
+          series: [{
+            name: '淹没深度分布',
+            type: 'bar',
+            data: [
+              { value: floodResults.value.area * 0.3, itemStyle: { color: '#91cc75' } },
+              { value: floodResults.value.area * 0.25, itemStyle: { color: '#fac858' } },
+              { value: floodResults.value.area * 0.2, itemStyle: { color: '#ee6666' } },
+              { value: floodResults.value.area * 0.15, itemStyle: { color: '#73c0de' } },
+              { value: floodResults.value.area * 0.08, itemStyle: { color: '#3ba272' } },
+              { value: floodResults.value.area * 0.02, itemStyle: { color: '#fc8452' } }
+            ]
+          }]
+        };
+        
+        depthChartInstance.setOption(depthOption);
+        depthChartInstance.resize();
+      }
+      
+      // 时间演变图表
+      if (activeTab.value === 'time' && timeChartRef.value) {
+        if (!timeChartInstance) {
+          timeChartInstance = echarts.init(timeChartRef.value);
+        }
+        
+        const timeData = [];
+        const areaData = [];
+        const depthData = [];
+        
+        for (let i = 0; i <= floodParams.value.duration; i += 2) {
+          timeData.push(i);
+          const progress = i / floodParams.value.duration;
+          areaData.push(floodResults.value.area * progress);
+          depthData.push(floodResults.value.maxDepth * progress);
+        }
+        
+        const timeOption = {
+          backgroundColor: '#fff',
+          tooltip: { trigger: 'axis' },
+          legend: { data: ['淹没面积', '最大深度'], textStyle: { color: '#333' } },
+          grid: { left: '3%', right: '4%', bottom: '3%', top: '15%', containLabel: true },
+          xAxis: {
+            type: 'category',
+            data: timeData,
+            name: '时间 (小时)',
+            axisLine: { lineStyle: { color: '#666' } },
+            axisLabel: { color: '#333' }
+          },
+          yAxis: [
+            {
+              type: 'value',
+              name: '面积 (km²)',
+              axisLine: { lineStyle: { color: '#666' } },
+              axisLabel: { color: '#333' },
+              splitLine: { lineStyle: { color: '#eee' } }
+            },
+            {
+              type: 'value',
+              name: '深度 (m)',
+              axisLine: { lineStyle: { color: '#666' } },
+              axisLabel: { color: '#333' },
+              splitLine: { show: false }
+            }
+          ],
+          series: [
+            {
+              name: '淹没面积',
+              type: 'line',
+              data: areaData,
+              lineStyle: { color: '#91cc75' },
+              itemStyle: { color: '#91cc75' }
+            },
+            {
+              name: '最大深度',
+              type: 'line',
+              yAxisIndex: 1,
+              data: depthData,
+              lineStyle: { color: '#ee6666' },
+              itemStyle: { color: '#ee6666' }
+            }
+          ]
+        };
+        
+        timeChartInstance.setOption(timeOption);
+        timeChartInstance.resize();
+      }
+    };
 
     // 激活功能
     const activateFeature = (feature) => {
@@ -545,15 +773,15 @@ export default {
       showReservoirDetail.value = false;
       showMonitoringDetail.value = false;
       showWarningDetail.value = false;
-      
-      if (feature === 'warning') {
-        // 预警分析功能
-        // alert('预警分析功能已启动');
-      } else if (feature === 'flood') {
-        alert('水库淹没模拟功能已启动');
-      } else if (feature === 'pollution') {
-        alert('污染物扩散模拟功能已启动');
-      }
+      // 不再弹窗提示
+      // if (feature === 'warning') {
+      //   // 预警分析功能
+      //   // alert('预警分析功能已启动');
+      // } else if (feature === 'flood') {
+      //   alert('水库淹没模拟功能已启动');
+      // } else if (feature === 'pollution') {
+      //   alert('污染物扩散模拟功能已启动');
+      // }
     };
 
     onMounted(() => {
@@ -562,6 +790,15 @@ export default {
         initMap();
       }, 100);
     })
+    
+    // 监听activeTab变化，重新渲染图表
+    watch(activeTab, () => {
+      if (floodSimulationActive.value) {
+        nextTick(() => {
+          initFloodCharts();
+        });
+      }
+    });
 
     onUnmounted(() => {
       // 组件卸载时移除地图以避免内存泄漏
@@ -593,7 +830,18 @@ export default {
       toggleMonitoringDetail,
       monitoringChartRef,
       showWarningDetail,
-      toggleWarningDetail
+      toggleWarningDetail,
+      // 水库淹没模拟相关
+      floodParams,
+      floodResults,
+      floodSimulationActive,
+      activeTab,
+      depthChartRef,
+      timeChartRef,
+      runFloodSimulation,
+      resetFloodParams,
+      getImpactLevelClass,
+      getImpactLevelText
     }
   }
 }
@@ -955,9 +1203,20 @@ export default {
   color: #ff5252;
 }
 .flood-simulation-panel {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 360px;
+  background: rgba(255,255,255,0.97);
+  border-radius: 10px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.13);
+  padding: 18px 18px 10px 18px;
+  z-index: 1200;
   display: flex;
   flex-direction: column;
   gap: 0;
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
 }
 .flood-section {
   padding: 18px 0 10px 0;
@@ -1146,20 +1405,16 @@ export default {
   align-items: center;
   gap: 10px;
 }
-.impact-level.low {
+.impact-level.impact-low {
   color: #4CAF50;
   background-color: #e8f5e9;
 }
-.impact-level.medium {
+.impact-level.impact-medium {
   color: #FFC107;
   background-color: #fff3cd;
 }
-.impact-level.high {
+.impact-level.impact-high {
   color: #F44336;
-  background-color: #ffebee;
-}
-.impact-level.extreme {
-  color: #E53935;
   background-color: #ffebee;
 }
 .impact-label {
