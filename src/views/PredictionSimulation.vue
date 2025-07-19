@@ -3,26 +3,36 @@
     <prediction-simulation-header title="预测模拟"></prediction-simulation-header>
     
     <div class="prediction-simulation-content">
+      <!-- 仅当不是预警分析时显示地图 -->
+      <template v-if="activeFeature !== 'warning'">
       <div id="prediction-map" class="prediction-map"></div>
+      </template>
       
       <!-- 左侧功能栏 -->
       <div class="left-sidebar">
         <h3 class="sidebar-title">功能设置</h3>
         <div class="sidebar-menu">
-          <div class="menu-item" @click="activateFeature('warning')">
+          <div class="menu-item" @click="toggleWarningMenu">
             <div class="menu-icon">
               <i class="feature-icon warning-icon"></i>
             </div>
             <span class="menu-text">预警分析</span>
+            <span class="simple-arrow" :class="{ open: showWarningMenu }"></span>
           </div>
-          
+          <div v-if="showWarningMenu" class="submenu">
+            <div class="submenu-item" @click="selectSubWarning('level')">
+              <span>水位预警</span>
+            </div>
+            <div class="submenu-item" @click="selectSubWarning('env')">
+              <span>环境预警</span>
+            </div>
+          </div>
           <div class="menu-item" @click="activateFeature('flood')">
             <div class="menu-icon">
               <i class="feature-icon flood-icon"></i>
             </div>
             <span class="menu-text">水库淹没模拟</span>
           </div>
-          
           <div class="menu-item" @click="activateFeature('pollution')">
             <div class="menu-icon">
               <i class="feature-icon pollution-icon"></i>
@@ -32,266 +42,8 @@
         </div>
       </div>
 
-      <!-- 右侧预警分析状态栏，仅在激活预警分析时显示 -->
-      <div v-if="activeFeature === 'warning'" class="right-statusbar">
-        <div class="status-section">
-          <div class="status-title clickable" @click="toggleTrendDetail">
-            水位变化趋势分析
-            <span class="arrow" :class="{open: showTrendDetail}"></span>
-          </div>
-          <div v-if="showTrendDetail" class="trend-detail">
-            <!-- ECharts 图表 -->
-            <div ref="echartsRef" class="trend-chart"></div>
-            <div class="trend-data-row">
-              <div class="trend-data-block">
-                <div class="trend-data-label">当前水位</div>
-                <div class="trend-data-value">105.02 m</div>
-                <div class="trend-data-sub">警戒水位: 110.8 m</div>
-              </div>
-              <div class="trend-data-block">
-                <div class="trend-data-label">24小时变化</div>
-                <div class="trend-data-value highlight">+2.3 m</div>
-                <div class="trend-data-sub">上升速度: 0.1 m/h</div>
-              </div>
-            </div>
-            <div class="trend-data-block">
-              <div class="trend-data-label">预测峰值</div>
-              <div class="trend-data-value">112.5 m</div>
-            </div>
-          </div>
-        </div>
-        <div class="status-section">
-          <div class="status-title clickable reservoir-section-title" @click="toggleReservoirDetail">
-            水库基本信息
-            <span class="arrow" :class="{open: showReservoirDetail}"></span>
-          </div>
-          <div v-if="showReservoirDetail" class="reservoir-container">
-            <div class="reservoir-header">
-              <button class="refresh-btn">刷新</button>
-            </div>
-            <div class="reservoir-grid">
-              <div class="reservoir-card">
-                <div class="card-label">水库名称</div>
-                <div class="card-value">官厅水库</div>
-              </div>
-              <div class="reservoir-card">
-                <div class="card-label">蓄水面积</div>
-                <div class="card-value">230 <span class="unit">km<sup>2</sup></span></div>
-              </div>
-              <div class="reservoir-card">
-                <div class="card-label">总库容</div>
-                <div class="card-value">4.16亿 <span class="unit">m<sup>3</sup></span></div>
-              </div>
-              <div class="reservoir-card">
-                <div class="card-label">汛限水位</div>
-                <div class="card-value">105.5 <span class="unit">m</span></div>
-              </div>
-              <div class="reservoir-card">
-                <div class="card-label">当前蓄水量</div>
-                <div class="card-value">3.84亿 <span class="unit">m<sup>3</sup></span></div>
-              </div>
-              <div class="reservoir-card">
-                <div class="card-label">警戒水位</div>
-                <div class="card-value">110.8 <span class="unit">m</span></div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="status-section">
-          <div class="status-title clickable" @click="toggleMonitoringDetail">
-            水位监测点数据
-            <span class="arrow" :class="{open: showMonitoringDetail}"></span>
-          </div>
-          <div v-if="showMonitoringDetail" class="monitoring-detail">
-            <div class="monitoring-chart" ref="monitoringChartRef"></div>
-          </div>
-        </div>
-        <div class="status-section">
-          <div class="status-title clickable" @click="toggleWarningDetail">
-            预警分析详情
-            <span class="arrow" :class="{open: showWarningDetail}"></span>
-          </div>
-          <div v-if="showWarningDetail" class="warning-detail">
-            <div class="warning-header">
-              <button class="report-btn">
-                <i class="report-icon"></i>
-                生成报告
-              </button>
-            </div>
-            <div class="warning-table">
-              <div class="table-header">
-                <div class="table-cell">监测点</div>
-                <div class="table-cell">当前水位 (m)</div>
-                <div class="table-cell">警戒水位 (m)</div>
-                <div class="table-cell">水位差 (m)</div>
-                <div class="table-cell">状态</div>
-              </div>
-              <div class="table-row">
-                <div class="table-cell">主坝监测点</div>
-                <div class="table-cell">102.6</div>
-                <div class="table-cell">110.8</div>
-                <div class="table-cell">+8.2</div>
-                <div class="table-cell"><span class="status-tag notice">关注</span></div>
-              </div>
-              <div class="table-row">
-                <div class="table-cell">北岸监测点</div>
-                <div class="table-cell">101.3</div>
-                <div class="table-cell">109.5</div>
-                <div class="table-cell">+8.2</div>
-                <div class="table-cell"><span class="status-tag notice">关注</span></div>
-              </div>
-              <div class="table-row">
-                <div class="table-cell">南岸监测点</div>
-                <div class="table-cell">100.8</div>
-                <div class="table-cell">108.2</div>
-                <div class="table-cell">+7.4</div>
-                <div class="table-cell"><span class="status-tag normal">正常</span></div>
-              </div>
-              <div class="table-row">
-                <div class="table-cell">泄洪道监测点</div>
-                <div class="table-cell">104.2</div>
-                <div class="table-cell">112.0</div>
-                <div class="table-cell">+7.8</div>
-                <div class="table-cell"><span class="status-tag warning">警告</span></div>
-              </div>
-              <div class="table-row">
-                <div class="table-cell">入库口监测点</div>
-                <div class="table-cell">105.1</div>
-                <div class="table-cell">111.5</div>
-                <div class="table-cell">+6.4</div>
-                <div class="table-cell"><span class="status-tag notice">关注</span></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 右侧水库淹没模拟控制栏 -->
-      <div v-if="activeFeature === 'flood'" class="flood-simulation-panel">
-        <div class="flood-section">
-          <div class="flood-section-header">
-            <span class="flood-icon">⚙️</span>
-            <span class="flood-title">模拟参数设置</span>
-          </div>
-          <div class="flood-section-content">
-            <form class="flood-form">
-              <div class="form-group">
-                <label style="font-weight:bold;display:flex;align-items:center;margin-bottom:10px;">
-                  <svg style="width:18px;height:18px;margin-right:6px;vertical-align:middle;" viewBox="0 0 24 24"><path fill="#90caf9" d="M3 5v14h18V5H3zm16 12H5V7h14v10z"/></svg>
-                  叠加分析图层
-                </label>
-                <div style="display:flex;flex-direction:column;gap:10px;">
-                  <label style="display:flex;align-items:center;gap:8px;">
-                    <input type="checkbox" v-model="floodParams.overlayLayers.resident" /> 居民点分布
-                  </label>
-                  <label style="display:flex;align-items:center;gap:8px;">
-                    <input type="checkbox" v-model="floodParams.overlayLayers.road" /> 道路网络
-                  </label>
-                  <label style="display:flex;align-items:center;gap:8px;">
-                    <input type="checkbox" v-model="floodParams.overlayLayers.farmland" /> 农田区域
-                  </label>
-                </div>
-              </div>
-              <div class="form-group">
-                <label for="reservoir">选择水库</label>
-                <select id="reservoir" v-model="floodParams.selectedReservoir" class="flood-select">
-                  <option value="" disabled>请选择水库</option>
-                  <option value="guanting">官厅水库</option>
-                  <option value="miyun">密云水库</option>
-                  <option value="huairou">怀柔水库</option>
-                </select>
-              </div>
-              
-              <div class="form-group">
-                <label for="bufferDistance">缓冲区距离 (米)</label>
-                <div class="slider-container">
-                  <input type="range" id="bufferDistance" v-model="floodParams.bufferDistance" min="0" max="5000" step="100" class="flood-slider" />
-                  <span class="slider-value">{{ floodParams.bufferDistance }}米</span>
-                </div>
-              </div>
-              <div class="form-group">
-                <label for="simWaterLevel">模拟水位 (米)</label>
-                <input id="simWaterLevel" v-model="floodParams.simWaterLevel" type="number" class="flood-select" placeholder="请输入模拟水位" />
-              </div>
-              <div class="form-actions">
-                <button type="button" class="btn-run" @click="runFloodSimulation">运行模拟</button>
-                <button type="button" class="btn-reset" @click="resetFloodParams">重置参数</button>
-              </div>
-            </form>
-          </div>
-        </div>
-        <div class="flood-divider"></div>
-        <div class="flood-section">
-          <div class="flood-section-header">
-            <span class="flood-icon">📊</span>
-            <span class="flood-title">模拟结果统计</span>
-          </div>
-          <div class="flood-section-content">
-            <div v-if="floodSimulationActive" class="flood-result-stats">
-              <div class="stat-row">
-                <div class="stat-label">淹没面积</div>
-                <div class="stat-value">{{ floodResults.area.toFixed(2) }} km²</div>
-              </div>
-              <div class="stat-row">
-                <div class="stat-label">最大淹没深度</div>
-                <div class="stat-value">{{ floodResults.maxDepth.toFixed(2) }} m</div>
-              </div>
-              <div class="stat-row">
-                <div class="stat-label">受影响居民点</div>
-                <div class="stat-value">{{ floodResults.affectedSettlements }}</div>
-              </div>
-              <div class="stat-row">
-                <div class="stat-label">受影响人口估计</div>
-                <div class="stat-value">{{ floodResults.affectedPopulation.toLocaleString() }} 人</div>
-              </div>
-              <div class="stat-row">
-                <div class="stat-label">受影响耕地面积</div>
-                <div class="stat-value">{{ floodResults.affectedFarmland.toFixed(2) }} km²</div>
-              </div>
-            </div>
-            <div v-else class="no-result-message">
-              请先运行模拟以查看结果
-            </div>
-          </div>
-        </div>
-        <div class="flood-divider"></div>
-        <div class="flood-section">
-          <div class="flood-section-header">
-            <span class="flood-icon">📈</span>
-            <span class="flood-title">模拟分析</span>
-          </div>
-          <div class="flood-section-content">
-            <div v-if="floodSimulationActive" class="flood-analysis">
-              <div class="analysis-tabs">
-                <div class="tab" :class="{ 'active': activeTab === 'depth' }" @click="activeTab = 'depth'">深度分布</div>
-                <div class="tab" :class="{ 'active': activeTab === 'time' }" @click="activeTab = 'time'">时间演变</div>
-                <div class="tab" :class="{ 'active': activeTab === 'impact' }" @click="activeTab = 'impact'">影响评估</div>
-              </div>
-              
-              <div class="tab-content">
-                <!-- 深度分布图表 -->
-                <div v-if="activeTab === 'depth'" class="chart-container" ref="depthChartRef"></div>
-                
-                <!-- 时间演变图表 -->
-                <div v-if="activeTab === 'time'" class="chart-container" ref="timeChartRef"></div>
-                
-                <!-- 影响评估 -->
-                <div v-if="activeTab === 'impact'" class="impact-analysis">
-                  <div class="impact-level" :class="getImpactLevelClass(floodResults.impactLevel)">
-                    <span class="impact-label">影响等级：</span>
-                    <span class="impact-value">{{ getImpactLevelText(floodResults.impactLevel) }}</span>
-                  </div>
-                  <div class="impact-detail">{{ floodResults.impactAnalysis }}</div>
-                  <button class="btn-report">生成分析报告</button>
-                </div>
-              </div>
-            </div>
-            <div v-else class="no-result-message">
-              请先运行模拟以查看分析结果
-            </div>
-          </div>
-        </div>
-      </div>
+      <!-- 右侧控制栏已移除 -->
+      
     </div>
   </div>
 </template>
@@ -481,33 +233,6 @@ export default {
       ]
     };
 
-    // 加载水库GeoJSON并添加Marker
-    const loadReservoirs = async () => {
-      try {
-        const res = await axios.get('/Beijing-GeoJson/北京市水库.json');
-        const geojson = res.data;
-        const icon = L.icon({
-          iconUrl: '/icons/水库.png',
-          iconSize: [32, 32],
-          iconAnchor: [16, 16],
-          popupAnchor: [0, -16]
-        });
-        reservoirLayer = L.geoJSON(geojson, {
-          pointToLayer: (feature, latlng) => {
-            return L.marker(latlng, { icon });
-          },
-          onEachFeature: (feature, layer) => {
-            if (feature.properties && feature.properties.name) {
-              layer.bindPopup('水库名称：' + feature.properties.name);
-            }
-          }
-        });
-        reservoirLayer.addTo(map);
-      } catch (e) {
-        console.error('水库数据加载失败', e);
-      }
-    };
-
     // 初始化地图
     const initMap = () => {
       map = L.map('prediction-map', {
@@ -515,27 +240,13 @@ export default {
         zoomControl: false // 先禁用默认缩放控件
       }).setView([39.9042, 116.4074], 10);
       
-      // 添加空白底图
-      L.tileLayer('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQAAAAEAAQMAAABmvDolAAAAA1BMVEX///+nxBvIAAAAH0lEQVQYGe3BAQ0AAADCIPunNsc3YAAAAAAAAAAAADwDc3oAAUWMHvMAAAAASUVORK5CYII=', {
-        minZoom: 1,
-        maxZoom: 19,
-        attribution: ''
-      }).addTo(map);
-      
-      // 添加ArcGIS MapServer服务
-      const beijingMapLayer = EsriLeaflet.dynamicMapLayer({
-        url: 'https://localhost:6443/arcgis/rest/services/beijingshuikuditu/北京地图/MapServer',
-        opacity: 0.7,
-        useCors: false // 如果遇到跨域问题，尝试设置为false
-      }).addTo(map);
+      // 不加载任何要素图层
+      // loadReservoirs(); 已移除
       
       // 在自定义位置添加缩放控件
       setTimeout(() => {
         L.control.zoom({ position: 'topleft' }).addTo(map);
       }, 200);
-
-      // 加载水库图层
-      loadReservoirs();
     }
 
     // 切换趋势分析详情显示
@@ -784,6 +495,22 @@ export default {
       // }
     };
 
+    // 新增：预警分析子菜单显示状态
+    const showWarningMenu = ref(false);
+    // 新增：当前选中的预警子功能
+    const selectedSubWarning = ref(null);
+
+    // 切换预警分析子菜单
+    const toggleWarningMenu = () => {
+      showWarningMenu.value = !showWarningMenu.value;
+      // 切换时不激活主功能，避免地图切换
+    };
+    // 选择子功能
+    const selectSubWarning = (type) => {
+      selectedSubWarning.value = type;
+      activeFeature.value = 'warning'; // 激活主功能（如需）
+    };
+
     onMounted(() => {
       // 确保地图容器已渲染后再初始化地图
       setTimeout(() => {
@@ -841,7 +568,12 @@ export default {
       runFloodSimulation,
       resetFloodParams,
       getImpactLevelClass,
-      getImpactLevelText
+      getImpactLevelText,
+      // 预警分析子菜单相关
+      showWarningMenu,
+      toggleWarningMenu,
+      selectedSubWarning,
+      selectSubWarning
     }
   }
 }
@@ -1445,5 +1177,48 @@ export default {
 }
 .btn-report:hover {
   background: #1976D2;
+}
+.submenu {
+  margin-left: 24px;
+  margin-bottom: 10px;
+  border-left: 2px solid #e0e6ed;
+  padding-left: 10px;
+}
+.submenu-item {
+  padding: 6px 0;
+  cursor: pointer;
+  color: #1976d2;
+  font-size: 15px;
+  transition: color 0.2s;
+}
+.submenu-item:hover {
+  color: #1565c0;
+}
+.collapse-arrow {
+  display: inline-block;
+  margin-left: 8px;
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 8px solid #1976d2;
+  transition: transform 0.2s;
+}
+.collapse-arrow.open {
+  transform: rotate(180deg);
+}
+.simple-arrow {
+  display: inline-block;
+  margin-left: 8px;
+  width: 0;
+  height: 0;
+  border-top: 6px solid transparent;
+  border-bottom: 6px solid transparent;
+  border-left: 8px solid #1976d2;
+  transition: transform 0.2s;
+  vertical-align: middle;
+}
+.simple-arrow.open {
+  transform: rotate(90deg);
 }
 </style> 
