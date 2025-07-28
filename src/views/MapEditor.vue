@@ -11,6 +11,52 @@
         'pointer-cursor': activeMapTool === 'selectFeature',
         'info-cursor': activeMapTool === 'identifyFeature'
       }"></div>
+      <!-- 图层控制面板 -->
+      <div class="control-panel">
+        <h3>图层控制</h3>
+        <div class="layer-control">
+          <label>
+            <input type="checkbox" v-model="layers.districts" @change="toggleLayer('districts')">
+            区县边界
+          </label>
+        </div>
+        <div class="layer-control">
+          <label>
+            <input type="checkbox" v-model="layers.waterLines" @change="toggleLayer('waterLines')">
+            水系线数据
+          </label>
+        </div>
+        <div class="layer-control">
+          <label>
+            <input type="checkbox" v-model="layers.waterAreas" @change="toggleLayer('waterAreas')">
+            水系面数据
+          </label>
+        </div>
+        <div class="layer-control">
+          <label>
+            <input type="checkbox" v-model="layers.reservoirs" @change="toggleLayer('reservoirs')">
+            水库(面)
+          </label>
+        </div>
+        <div class="layer-control">
+          <label>
+            <input type="checkbox" v-model="layers.reservoirPoints" @change="toggleLayer('reservoirPoints')">
+            水库(点)
+          </label>
+        </div>
+        <div class="layer-control">
+          <label>
+            <input type="checkbox" v-model="layers.settlements" @change="toggleLayer('settlements')">
+            居民地地名
+          </label>
+        </div>
+      </div>
+      <!-- 水库图片控制面板 -->
+      <div v-if="showReservoirImgPanel" class="reservoir-img-panel">
+        <span class="img-panel-close" @click="showReservoirImgPanel = false">×</span>
+        <img :src="reservoirImgUrl" :alt="reservoirImgName" class="reservoir-img-main" onerror="this.style.display='none'" />
+        <div class="reservoir-img-title">{{ reservoirImgName }}</div>
+      </div>
       <!-- 自定义工具栏 -->
       <div class="custom-toolbar">
         <img src="/icons/打开mxd.png" alt="打开mxd" title="打开mxd" @click="openMxdFile" />
@@ -19,6 +65,10 @@
         <img src="/icons/全图.png" alt="全图" title="全图" @click="viewFullExtent" />
         <img src="/icons/手.png" alt="平移" title="平移" @click="activatePan" :class="{ 'active-tool': activeMapTool === 'pan' }" />
         <img src="/icons/选择要素.png" alt="选择要素" title="选择要素" @click="activateSelectFeature" :class="{ 'active-tool': activeMapTool === 'selectFeature' }" />
+        <!-- 新增：查询按钮 -->
+        <img src="/icons/查询.png" alt="查询" title="查询" @click="activateQuery" :class="{ 'active-tool': activeMapTool === 'query' }" />
+        <!-- 新增：渲染按钮 -->
+        <img src="/icons/渲染.png" alt="渲染" title="渲染" @click="activateRender" :class="{ 'active-tool': activeMapTool === 'render' }" />
         <img src="/icons/识别要素.png" alt="识别要素" title="识别要素" @click="activateIdentifyFeature" :class="{ 'active-tool': activeMapTool === 'identifyFeature' }" />
         <img 
           src="/icons/左箭头.png" 
@@ -35,10 +85,25 @@
           :class="{ 'disabled-tool': !canGoForward }"
         />
       </div>
+      <!-- 查询弹窗 -->
+      <div v-if="activeMapTool === 'query'" class="search-bar-modal">
+        <div class="search-bar-container">
+          <input
+            v-model="searchText"
+            @keyup.enter="handleSearch"
+            class="search-input"
+            placeholder="请输入水库名称，如：怀柔水库"
+            autofocus
+          />
+          <button class="search-btn" @click="handleSearch">查询</button>
+          <span class="search-close" @click="activeMapTool = ''">×</span>
+        </div>
+        <div v-if="searchError" class="search-error">{{ searchError }}</div>
+      </div>
       <!-- 加载提示 -->
       <div class="loading-overlay" v-if="loading">
         <div class="loading-spinner"></div>
-        <div class="loading-text">加载MXD文件中...</div>
+        <div class="loading-text">正在加载地理数据...</div>
       </div>
       <!-- MXD文件选择输入框（隐藏） -->
       <input 
@@ -113,1242 +178,369 @@
           </div>
         </div>
       </div>
+      <!-- 渲染对话框 -->
+      <div v-if="activeMapTool === 'render'" class="render-modal">
+        <div class="render-modal-content">
+          <div class="render-modal-header">
+            <span>水库点分级渲染</span>
+            <span class="render-modal-close" @click="activeMapTool = ''">×</span>
+          </div>
+          <div class="render-modal-body">
+            <div class="render-row">
+              <label>字段：</label>
+              <select v-model="renderField" class="render-select">
+                <option v-for="f in reservoirPointFields" :key="f" :value="f">{{ f }}</option>
+              </select>
+            </div>
+            <div class="render-row">
+              <label>条件：</label>
+              <select v-model="renderOp" class="render-select">
+                <option value=">">大于</option>
+                <option value="<">小于</option>
+                <option value=">=">大于等于</option>
+                <option value="<=">小于等于</option>
+                <option value="==">等于</option>
+                <option value="range">区间</option>
+              </select>
+              <input v-model="renderValue1" class="render-input" placeholder="数值" type="number" />
+              <span v-if="renderOp==='range'"> - </span>
+              <input v-if="renderOp==='range'" v-model="renderValue2" class="render-input" placeholder="数值" type="number" />
+            </div>
+            <div class="render-row">
+              <label>颜色：</label>
+              <input v-model="renderColor" class="render-color" type="color" />
+              <span class="render-color-label">满足条件</span>
+              <input v-model="renderElseColor" class="render-color" type="color" />
+              <span class="render-color-label">不满足</span>
+            </div>
+            <div class="render-row">
+              <button class="render-btn" @click="handleRender">渲染</button>
+            </div>
+            <div v-if="renderError" class="render-error">{{ renderError }}</div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, reactive, computed, watch } from 'vue'
+import { ref, onMounted, reactive } from 'vue'
 import * as L from 'leaflet'
 import MapEditorHeader from '../components/MapEditorHeader.vue'
 import 'leaflet/dist/leaflet.css'
 
 const map = ref(null)
-const loading = ref(false)
-const mxdFileInput = ref(null)
-const currentMxdFile = ref(null)
-const showMxdPanel = ref(false)
-const activeMapTool = ref(null) // 当前激活的地图工具
-const isPanning = ref(false) // 是否正在平移中
+const loading = ref(true)
 
-// 地图视图历史记录
-const mapHistory = ref([])
-const currentHistoryIndex = ref(-1)
+// 图层状态
+const layers = reactive({
+  districts: true,
+  waterLines: true,
+  waterAreas: true,
+  reservoirs: true,
+  settlements: true,
+  reservoirPoints: false
+})
 
-// 计算属性：是否可以返回上一视图
-const canGoBack = computed(() => {
-  return currentHistoryIndex.value > 0;
-});
+// 图层对象
+const layerObjects = reactive({
+  districts: null,
+  waterLines: null,
+  waterAreas: null,
+  reservoirs: null,
+  settlements: null,
+  reservoirPoints: null
+})
 
-// 计算属性：是否可以前进到下一视图
-const canGoForward = computed(() => {
-  return currentHistoryIndex.value < mapHistory.value.length - 1;
-});
-
-// 添加视图到历史记录
-const addToHistory = (view) => {
-  // 如果当前不在历史记录的末尾，则清除当前位置之后的历史记录
-  if (currentHistoryIndex.value < mapHistory.value.length - 1) {
-    mapHistory.value = mapHistory.value.slice(0, currentHistoryIndex.value + 1);
-  }
-  
-  // 添加新的视图状态到历史记录
-  mapHistory.value.push(view);
-  currentHistoryIndex.value = mapHistory.value.length - 1;
-  
-  console.log(`添加视图到历史记录，当前索引：${currentHistoryIndex.value}，总历史记录：${mapHistory.value.length}`);
-};
-
-// 返回上一视图
-const goToPreviousView = () => {
-  if (!canGoBack.value || !map.value) return;
-  
-  currentHistoryIndex.value--;
-  const previousView = mapHistory.value[currentHistoryIndex.value];
-  
-  // 应用历史视图状态，但不记录这次变化
-  applyViewState(previousView, false);
-  
-  console.log(`返回到历史视图，当前索引：${currentHistoryIndex.value}`);
-};
-
-// 前进到下一视图
-const goToNextView = () => {
-  if (!canGoForward.value || !map.value) return;
-  
-  currentHistoryIndex.value++;
-  const nextView = mapHistory.value[currentHistoryIndex.value];
-  
-  // 应用历史视图状态，但不记录这次变化
-  applyViewState(nextView, false);
-  
-  console.log(`前进到历史视图，当前索引：${currentHistoryIndex.value}`);
-};
-
-// 应用视图状态
-const applyViewState = (viewState, recordHistory = true) => {
-  if (!map.value) return;
-  
-  // 设置地图中心点和缩放级别
-  map.value.setView(viewState.center, viewState.zoom, {
-    animate: true,
-    duration: 0.5
-  });
-  
-  // 如果需要记录这次视图变化，则添加到历史记录
-  if (recordHistory) {
-    // 延迟添加到历史记录，确保动画完成后的状态
-    setTimeout(() => {
-      const currentView = getCurrentViewState();
-      addToHistory(currentView);
-    }, 100);
-  }
-};
-
-// 获取当前视图状态
-const getCurrentViewState = () => {
-  if (!map.value) return null;
-  
-  return {
-    center: map.value.getCenter(),
-    zoom: map.value.getZoom(),
-    timestamp: Date.now()
-  };
-};
-
-// 监听地图移动和缩放事件
-const setupMapEventListeners = () => {
-  if (!map.value) return;
-  
-  // 防抖函数
-  let timeoutId;
-  const debounce = (callback, delay = 300) => {
-    clearTimeout(timeoutId);
-    timeoutId = setTimeout(callback, delay);
-  };
-  
-  // 监听地图移动结束事件
-  map.value.on('moveend', () => {
-    // 只有当用户交互导致的视图变化才记录历史
-    if (map.value._loaded && !map.value._animatingZoom) {
-      debounce(() => {
-        const currentView = getCurrentViewState();
-        addToHistory(currentView);
-      });
-    }
-  });
-  
-  // 监听地图缩放结束事件
-  map.value.on('zoomend', () => {
-    // 只有当用户交互导致的视图变化才记录历史
-    if (map.value._loaded && !map.value._animatingZoom) {
-      debounce(() => {
-        const currentView = getCurrentViewState();
-        addToHistory(currentView);
-      });
-    }
-  });
-};
-
-// MXD图层
-const mxdLayers = ref([]);
-// MXD图层对象
-const mxdLayerObjects = ref({});
-
-// 模拟MXD文件中的图层数据
-const mockMxdLayerData = [
-  {
-    id: 'mxd-main-group',
-    name: '图层',
-    type: 'group',
-    visible: true,
-    children: [
-      {
-        id: 'beijing-resident-places',
-        name: '居民地地名',
-        type: 'point',
-        visible: true
-      }
-    ]
-  },
-  {
-    id: 'beijing-water-lines',
-    name: '北京市_水系线数据',
-    type: 'line',
-    visible: true
-  },
-  {
-    id: 'beijing-water-areas',
-    name: '北京市_水系面数据',
-    type: 'polygon',
-    visible: true
-  },
-  {
-    id: 'beijing-reservoirs',
-    name: '北京市水库',
-    type: 'polygon',
-    visible: true
-  },
-  {
-    id: 'beijing-districts',
-    name: '北京区县界',
-    type: 'polygon',
-    visible: true
-  }
-];
-    
-    // 初始化地图
-    const initMap = () => {
-  if (map.value) return; // 防止重复初始化
-  
-  // 创建地图实例
+// 初始化地图
+const initMap = () => {
   map.value = L.map('editor-map', {
-    center: [39.9042, 116.4074], // 北京市中心坐标
-    zoom: 11,
-    zoomControl: false, // 禁用默认缩放控件
-    layers: [], // 初始不加载任何图层
-    minZoom: 3,  // 允许更小的缩放级别
-    maxZoom: 19, // 允许更大的缩放级别
-    preferCanvas: true // 使用Canvas渲染，提高性能
-  });
-  
-  // 添加底图
-  const baseLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; OpenStreetMap contributors',
-    maxZoom: 19, 
-    minZoom: 3,
-    subdomains: ['a', 'b', 'c'], // 使用多个子域名减轻服务器负担
-    crossOrigin: true,
-    detectRetina: true // 支持Retina显示器
-  }).addTo(map.value);
-  
-  // 监听瓦片加载错误，尝试重新加载
-  baseLayer.on('tileerror', function(error) {
-    console.warn('地图瓦片加载失败，尝试重新加载', error);
-    setTimeout(() => {
-      error.tile.src = error.tile.src.replace(/&rand=\d+/, '') + '&rand=' + Math.random();
-    }, 1000);
-  });
-  
-  // 备选地图源（如果OpenStreetMap不可用）
-  const backupBaseLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-    attribution: '&copy; OpenStreetMap contributors, &copy; CARTO',
-    subdomains: 'abcd',
-    maxZoom: 20
-  });
-  
-  // 如果主地图源出现问题，切换到备用地图源
-  setTimeout(() => {
-    const container = document.getElementById('editor-map');
-    // 检查是否有灰色瓦片（加载失败的标志）
-    const grayTiles = container.querySelectorAll('img.leaflet-tile[src*="openstreetmap"][style*="visibility: hidden"]');
-    if (grayTiles.length > 5) {
-      console.log('检测到多个地图瓦片加载失败，切换到备用地图源');
-      map.value.removeLayer(baseLayer);
-      backupBaseLayer.addTo(map.value);
-    }
-  }, 5000);
-  
-  // 添加缩放控件（位置：右上角）
-  L.control.zoom({
-    position: 'topright'
-  }).addTo(map.value);
-  
-  // 添加比例尺
-  L.control.scale({
-    position: 'bottomleft',
-    imperial: false // 只显示公制单位
-  }).addTo(map.value);
-  
-  console.log('地图初始化完成，当前中心点:', map.value.getCenter());
-  
-  // 初始化地图后记录初始视图状态
-  setTimeout(() => {
-    const initialView = getCurrentViewState();
-    if (initialView) {
-      addToHistory(initialView);
-    }
-    
-    // 设置地图事件监听
-    setupMapEventListeners();
-  }, 500);
-};
-
-// 地图缩放功能
-const zoomIn = () => {
-  if (map.value) {
-    map.value.zoomIn();
-  }
-};
-
-// 激活放大工具
-const activateZoomIn = () => {
-  // 如果已经激活了放大工具，则取消激活
-  if (activeMapTool.value === 'zoomIn') {
-    deactivateMapTools();
-    return;
-  }
-  
-  deactivateMapTools();
-  activeMapTool.value = 'zoomIn';
-  
-  // 添加点击事件监听器
-  if (map.value) {
-    map.value.on('click', handleZoomInClick);
-  }
-};
-
-// 处理放大工具点击
-const handleZoomInClick = (e) => {
-  if (activeMapTool.value === 'zoomIn' && map.value) {
-    // 获取点击位置
-    const clickPoint = e.latlng;
-    
-    // 放大地图并将点击位置设为新的中心点
-    map.value.setView(clickPoint, map.value.getZoom() + 1);
-  }
-};
-
-// 激活缩小工具
-const activateZoomOut = () => {
-  // 如果已经激活了缩小工具，则取消激活
-  if (activeMapTool.value === 'zoomOut') {
-    deactivateMapTools();
-    return;
-  }
-  
-  deactivateMapTools();
-  activeMapTool.value = 'zoomOut';
-  
-  // 添加点击事件监听器
-  if (map.value) {
-    map.value.on('click', handleZoomOutClick);
-  }
-};
-
-// 处理缩小工具点击
-const handleZoomOutClick = (e) => {
-  if (activeMapTool.value === 'zoomOut' && map.value) {
-    // 获取点击位置
-    const clickPoint = e.latlng;
-    
-    // 缩小地图并将点击位置设为新的中心点
-    map.value.setView(clickPoint, map.value.getZoom() - 1);
-  }
-};
-
-// 激活平移工具
-const activatePan = () => {
-  // 如果已经激活了平移工具，则取消激活
-  if (activeMapTool.value === 'pan') {
-    deactivateMapTools();
-    return;
-  }
-  
-  deactivateMapTools();
-  activeMapTool.value = 'pan';
-  
-  // 启用拖动
-  if (map.value) {
-    map.value.dragging.enable();
-    
-    // 添加鼠标事件监听器
-    const mapElement = document.getElementById('editor-map');
-    if (mapElement) {
-      mapElement.addEventListener('mousedown', handlePanMouseDown);
-      mapElement.addEventListener('mouseup', handlePanMouseUp);
-      mapElement.addEventListener('mouseleave', handlePanMouseUp);
-    }
-  }
-};
-
-// 处理平移工具鼠标按下事件
-const handlePanMouseDown = () => {
-  if (activeMapTool.value === 'pan') {
-    isPanning.value = true;
-  }
-};
-
-// 处理平移工具鼠标松开事件
-const handlePanMouseUp = () => {
-  if (activeMapTool.value === 'pan') {
-    isPanning.value = false;
-  }
-};
-
-// 激活选择要素工具
-const activateSelectFeature = () => {
-  // 如果已经激活了选择要素工具，则取消激活
-  if (activeMapTool.value === 'selectFeature') {
-    deactivateMapTools();
-    return;
-  }
-  
-  deactivateMapTools();
-  activeMapTool.value = 'selectFeature';
-  
-  // 添加点击事件监听器
-  if (map.value) {
-    map.value.on('click', handleSelectFeatureClick);
-  }
-};
-
-// 处理选择要素工具点击
-const handleSelectFeatureClick = (e) => {
-  if (activeMapTool.value !== 'selectFeature' || !map.value) return;
-  
-  const clickPoint = e.latlng;
-  console.log(`选择要素点击位置: ${clickPoint.lat}, ${clickPoint.lng}`);
-  
-  // 在点击位置进行空间查询
-  const radius = 10; // 像素半径
-  const point = e.containerPoint;
-  let selectedFeatures = [];
-  
-  // 遍历所有图层，查找点击位置的要素
-  Object.values(mxdLayerObjects.value).forEach(layer => {
-    if (layer && layer.eachLayer) {
-      layer.eachLayer(featureLayer => {
-        // 如果是GeoJSON图层
-        if (featureLayer.feature) {
-          const layerPoint = map.value.latLngToContainerPoint(featureLayer.getBounds().getCenter());
-          const distance = point.distanceTo(layerPoint);
-          
-          if (distance <= radius) {
-            selectedFeatures.push({
-              layer: featureLayer,
-              feature: featureLayer.feature,
-              distance: distance
-            });
-          }
-        }
-      });
-    }
-  });
-  
-  // 按距离排序
-  selectedFeatures.sort((a, b) => a.distance - b.distance);
-  
-  // 处理选中的要素
-  if (selectedFeatures.length > 0) {
-    const selected = selectedFeatures[0];
-    
-    // 高亮显示选中的要素
-    highlightFeature(selected.layer);
-    
-    // 显示要素属性
-    showFeatureProperties(selected.feature);
-    
-    console.log('选中要素:', selected.feature);
-  } else {
-    console.log('未选中任何要素');
-    // 清除之前的高亮
-    clearHighlightedFeatures();
-  }
-};
-
-// 高亮显示要素
-const highlightFeature = (layer) => {
-  // 清除之前的高亮
-  clearHighlightedFeatures();
-  
-  // 保存原始样式
-  if (!layer._originalStyle) {
-    layer._originalStyle = {
-      weight: layer.options.weight,
-      color: layer.options.color,
-      opacity: layer.options.opacity,
-      fillOpacity: layer.options.fillOpacity
-    };
-  }
-  
-  // 应用高亮样式
-  layer.setStyle({
-    weight: 3,
-    color: '#ff7800',
-    opacity: 1,
-    fillOpacity: 0.7
-  });
-  
-  // 将图层置于顶层
-  if (layer.bringToFront) {
-    layer.bringToFront();
-  }
-  
-  // 保存当前高亮的图层
-  highlightedLayer.value = layer;
-};
-
-// 清除高亮显示的要素
-const clearHighlightedFeatures = () => {
-  if (highlightedLayer.value) {
-    // 恢复原始样式
-    if (highlightedLayer.value._originalStyle) {
-      highlightedLayer.value.setStyle(highlightedLayer.value._originalStyle);
-    }
-    highlightedLayer.value = null;
-  }
-};
-
-// 显示要素属性
-const showFeatureProperties = (feature) => {
-  if (!feature || !feature.properties) return;
-  
-  // 创建属性面板
-  let propertiesPanel = document.getElementById('feature-properties-panel');
-  
-  // 如果面板不存在，则创建一个
-  if (!propertiesPanel) {
-    propertiesPanel = document.createElement('div');
-    propertiesPanel.id = 'feature-properties-panel';
-    propertiesPanel.className = 'feature-properties-panel';
-    document.querySelector('.map-editor-content').appendChild(propertiesPanel);
-  }
-  
-  // 构建属性内容
-  let content = '<div class="properties-header"><h3>要素属性</h3><span class="close-btn" onclick="document.getElementById(\'feature-properties-panel\').style.display=\'none\'">×</span></div>';
-  content += '<div class="properties-content">';
-  
-  // 添加属性列表
-  for (const key in feature.properties) {
-    if (Object.prototype.hasOwnProperty.call(feature.properties, key)) {
-      content += `<div class="property-item"><span class="property-name">${key}:</span><span class="property-value">${feature.properties[key]}</span></div>`;
-    }
-  }
-  
-  content += '</div>';
-  
-  // 更新面板内容
-  propertiesPanel.innerHTML = content;
-  propertiesPanel.style.display = 'block';
-};
-
-// 激活识别要素工具
-const activateIdentifyFeature = () => {
-  // 如果已经激活了识别要素工具，则取消激活
-  if (activeMapTool.value === 'identifyFeature') {
-    deactivateMapTools();
-    return;
-  }
-  
-  deactivateMapTools();
-  activeMapTool.value = 'identifyFeature';
-  
-  // 添加点击事件监听器
-  if (map.value) {
-    map.value.on('click', handleIdentifyFeatureClick);
-  }
-};
-
-// 处理识别要素工具点击
-const handleIdentifyFeatureClick = (e) => {
-  if (activeMapTool.value !== 'identifyFeature' || !map.value) return;
-  
-  const clickPoint = e.latlng;
-  console.log(`识别要素点击位置: ${clickPoint.lat}, ${clickPoint.lng}`);
-  
-  // 在点击位置查询要素信息
-  const radius = 15; // 增加像素半径以便更容易选中要素
-  const point = e.containerPoint;
-  let features = [];
-  
-  // 遍历所有图层，查找点击位置的要素
-  Object.values(mxdLayerObjects.value).forEach(layer => {
-    if (layer && layer.eachLayer) {
-      layer.eachLayer(featureLayer => {
-        // 处理不同类型的要素
-        if (featureLayer.feature) {
-          let isInRange = false;
-          
-          // 根据要素类型进行不同的空间查询
-          const geomType = featureLayer.feature.geometry.type;
-          
-          if (geomType === 'Point') {
-            // 点要素 - 直接计算点到点的距离
-            const layerPoint = map.value.latLngToContainerPoint(
-              L.latLng(
-                featureLayer.feature.geometry.coordinates[1],
-                featureLayer.feature.geometry.coordinates[0]
-              )
-            );
-            isInRange = point.distanceTo(layerPoint) <= radius;
-          } 
-          else if (geomType === 'LineString' || geomType === 'MultiLineString') {
-            // 线要素 - 检查点到线的最短距离
-            try {
-              // 获取线的所有点
-              let coords = featureLayer.feature.geometry.coordinates;
-              if (geomType === 'LineString') {
-                coords = [coords]; // 包装成MultiLineString格式以统一处理
-              }
-              
-              // 检查每条线
-              for (const lineCoords of coords) {
-                for (let i = 0; i < lineCoords.length - 1; i++) {
-                  const p1 = map.value.latLngToContainerPoint(
-                    L.latLng(lineCoords[i][1], lineCoords[i][0])
-                  );
-                  const p2 = map.value.latLngToContainerPoint(
-                    L.latLng(lineCoords[i+1][1], lineCoords[i+1][0])
-                  );
-                  
-                  // 计算点到线段的距离
-                  const distance = pointToLineDistance(point, p1, p2);
-                  if (distance <= radius) {
-                    isInRange = true;
-                    break;
-                  }
-                }
-                if (isInRange) break;
-              }
-            } catch (err) {
-              console.error('计算线要素距离时出错:', err);
-            }
-          } 
-          else if (geomType === 'Polygon' || geomType === 'MultiPolygon') {
-            // 面要素 - 检查点是否在面内或接近面边界
-            try {
-              // 首先检查点是否在多边形内
-              if (featureLayer.getBounds && featureLayer.getBounds().contains(clickPoint)) {
-                isInRange = true;
-              } else {
-                // 如果不在多边形内，检查是否接近边界
-                let coords = featureLayer.feature.geometry.coordinates;
-                if (geomType === 'Polygon') {
-                  coords = [coords]; // 包装成MultiPolygon格式以统一处理
-                }
-                
-                // 检查每个多边形的每个环
-                outerLoop: for (const polygon of coords) {
-                  for (const ring of polygon) {
-                    for (let i = 0; i < ring.length - 1; i++) {
-                      const p1 = map.value.latLngToContainerPoint(
-                        L.latLng(ring[i][1], ring[i][0])
-                      );
-                      const p2 = map.value.latLngToContainerPoint(
-                        L.latLng(ring[i+1][1], ring[i+1][0])
-                      );
-                      
-                      // 计算点到边界线段的距离
-                      const distance = pointToLineDistance(point, p1, p2);
-                      if (distance <= radius) {
-                        isInRange = true;
-                        break outerLoop;
-                      }
-                    }
-                  }
-                }
-              }
-            } catch (err) {
-              console.error('计算面要素距离时出错:', err);
-            }
-          }
-          
-          if (isInRange) {
-            // 计算中心点距离用于排序
-            let centerDistance = Infinity;
-            try {
-              if (featureLayer.getBounds) {
-                const center = featureLayer.getBounds().getCenter();
-                const centerPoint = map.value.latLngToContainerPoint(center);
-                centerDistance = point.distanceTo(centerPoint);
-              }
-            } catch (err) {
-              console.error('计算中心距离时出错:', err);
-            }
-            
-            features.push({
-              layer: featureLayer,
-              feature: featureLayer.feature,
-              distance: centerDistance,
-              type: geomType
-            });
-          }
-        }
-      });
-    }
-  });
-  
-  // 按距离排序
-  features.sort((a, b) => a.distance - b.distance);
-  
-  // 显示要素信息
-  if (features.length > 0) {
-    const feature = features[0].feature;
-    
-    // 创建更详细的弹出框内容
-    const popupContent = createEnhancedPopupContent(feature, features[0].type);
-    
-    // 在点击位置显示弹出框
-    L.popup({
-      maxWidth: 300,
-      maxHeight: 300,
-      autoPan: true,
-      className: 'feature-popup'
-    })
-      .setLatLng(clickPoint)
-      .setContent(popupContent)
-      .openOn(map.value);
-    
-    console.log('识别要素:', feature);
-  } else {
-    console.log('未识别到任何要素');
-  }
-};
-
-// 计算点到线段的距离
-const pointToLineDistance = (p, p1, p2) => {
-  const x = p.x;
-  const y = p.y;
-  const x1 = p1.x;
-  const y1 = p1.y;
-  const x2 = p2.x;
-  const y2 = p2.y;
-  
-  // 线段长度的平方
-  const l2 = (x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1);
-  
-  // 如果线段实际上是一个点
-  if (l2 === 0) return Math.sqrt((x - x1) * (x - x1) + (y - y1) * (y - y1));
-  
-  // 计算点在线段上的投影比例 t
-  let t = ((x - x1) * (x2 - x1) + (y - y1) * (y2 - y1)) / l2;
-  
-  // 将 t 限制在 [0, 1] 范围内，以获取线段上的最近点
-  t = Math.max(0, Math.min(1, t));
-  
-  // 计算线段上最近点的坐标
-  const projectionX = x1 + t * (x2 - x1);
-  const projectionY = y1 + t * (y2 - y1);
-  
-  // 计算点到投影点的距离
-  return Math.sqrt((x - projectionX) * (x - projectionX) + (y - projectionY) * (y - projectionY));
-};
-
-// 创建增强的弹出框内容
-const createEnhancedPopupContent = (feature, geomType) => {
-  if (!feature || !feature.properties) return '<div class="popup-content">无要素信息</div>';
-  
-  let content = '<div class="popup-content">';
-  
-  // 添加要素类型标题
-  let typeTitle = '未知类型';
-  if (geomType === 'Point') typeTitle = '点要素';
-  else if (geomType === 'LineString' || geomType === 'MultiLineString') typeTitle = '线要素';
-  else if (geomType === 'Polygon' || geomType === 'MultiPolygon') typeTitle = '面要素';
-  
-  content += `<div class="popup-header"><strong>${typeTitle}</strong></div>`;
-  content += '<div class="popup-body">';
-  
-  // 添加属性表格
-  content += '<table class="popup-table">';
-  content += '<tr><th>属性</th><th>值</th></tr>';
-  
-  // 添加属性列表
-  for (const key in feature.properties) {
-    if (Object.prototype.hasOwnProperty.call(feature.properties, key)) {
-      const value = feature.properties[key] || '空';
-      content += `<tr><td>${key}</td><td>${value}</td></tr>`;
-    }
-  }
-  
-  content += '</table>';
-  content += '</div></div>';
-  return content;
-};
-
-// 添加弹出框样式
-const addPopupStyles = () => {
-  // 检查是否已添加样式
-  if (!document.getElementById('popup-styles')) {
-    const styleElement = document.createElement('style');
-    styleElement.id = 'popup-styles';
-    styleElement.textContent = `
-      .feature-popup .leaflet-popup-content-wrapper {
-        background: white;
-        border-radius: 8px;
-        box-shadow: 0 3px 14px rgba(0,0,0,0.2);
-      }
-      .feature-popup .leaflet-popup-content {
-        margin: 10px;
-        min-width: 200px;
-      }
-      .popup-content {
-        font-family: Arial, sans-serif;
-      }
-      .popup-header {
-        background: #f0f0f0;
-        padding: 5px 8px;
-        border-radius: 4px 4px 0 0;
-        font-size: 14px;
-        border-bottom: 1px solid #ddd;
-        margin-bottom: 8px;
-      }
-      .popup-body {
-        padding: 0 5px;
-      }
-      .popup-table {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: 12px;
-      }
-      .popup-table th, .popup-table td {
-        padding: 4px 6px;
-        border-bottom: 1px solid #eee;
-        text-align: left;
-      }
-      .popup-table th {
-        background: #f9f9f9;
-        font-weight: bold;
-      }
-    `;
-    document.head.appendChild(styleElement);
-  }
-};
-
-// 存储当前高亮的图层
-const highlightedLayer = ref(null);
-
-// 取消激活所有地图工具
-const deactivateMapTools = () => {
-  // 移除所有事件监听器
-  if (map.value) {
-    map.value.off('click', handleZoomInClick);
-    map.value.off('click', handleZoomOutClick);
-    map.value.off('click', handleSelectFeatureClick);
-    map.value.off('click', handleIdentifyFeatureClick);
-    
-    // 移除平移相关的鼠标事件监听器
-    const mapElement = document.getElementById('editor-map');
-    if (mapElement) {
-      mapElement.removeEventListener('mousedown', handlePanMouseDown);
-      mapElement.removeEventListener('mouseup', handlePanMouseUp);
-      mapElement.removeEventListener('mouseleave', handlePanMouseUp);
-    }
-    
-    // 清除高亮的要素
-    clearHighlightedFeatures();
-    
-    // 关闭任何打开的弹出框
-    map.value.closePopup();
-    
-    // 隐藏属性面板
-    const propertiesPanel = document.getElementById('feature-properties-panel');
-    if (propertiesPanel) {
-      propertiesPanel.style.display = 'none';
-    }
-  }
-  
-  // 重置状态
-  activeMapTool.value = null;
-  isPanning.value = false;
-};
-
-const zoomOut = () => {
-  if (map.value) {
-    map.value.zoomOut();
-  }
-};
-
-// 处理地图全图显示
-const viewFullExtent = () => {
-  if (!map.value) return;
-  
-  // 如果有图层，则适应所有图层的范围
-  if (Object.keys(mxdLayerObjects.value).length > 0) {
-    try {
-      const visibleLayers = Object.values(mxdLayerObjects.value).filter(layer => 
-        map.value.hasLayer(layer));
-      
-      if (visibleLayers.length > 0) {
-        const group = L.featureGroup(visibleLayers);
-        const bounds = group.getBounds();
-        if (bounds.isValid()) {
-          map.value.fitBounds(bounds, { padding: [50, 50], maxZoom: 12 });
-          return;
-        }
-      }
-    } catch (e) {
-      console.warn('获取图层范围失败:', e);
-    }
-  }
-  
-  // 如果没有图层或获取范围失败，则返回北京市中心视图
-  map.value.setView([39.9042, 116.4074], 10);
-};
-
-// 从MXD文件中加载图层到地图
-const loadMxdLayersToMap = () => {
-  console.log('处理MXD文件图层...');
-  
-  // 清除旧的MXD图层
-  clearMxdLayers();
-  
-  // 扁平化图层数据，提取所有可视化图层（非组）
-  const flattenLayers = [];
-  const processMxdData = (layers, parentVisible = true) => {
-    layers.forEach(layer => {
-      if (layer.type === 'group') {
-        // 递归处理子图层，传递父图层的可见性
-        if (layer.children && layer.children.length > 0) {
-          processMxdData(layer.children, parentVisible && layer.visible);
-        }
-        flattenLayers.push({ ...layer, isGroup: true }); // 保留组信息
-      } else {
-        // 图层的实际可见性受父图层影响
-        flattenLayers.push({ 
-          ...layer, 
-          effectiveVisible: parentVisible && layer.visible 
-        });
-      }
-    });
-  };
-  processMxdData(mockMxdLayerData);
-  mxdLayers.value = flattenLayers;
-  
-  // 创建一个加载进度跟踪器
-  let layersToLoad = 0;
-  let layersLoaded = 0;
-  
-  // 遍历模拟的图层数据并添加到地图
-  mxdLayers.value.forEach(layerData => {
-    // 跳过组图层
-    if (layerData.isGroup) return;
-    
-    layersToLoad++;
-    let layer;
-    
-    switch(layerData.type) {
-      case 'point':
-        layer = loadGeoJsonLayer('居民地地名.json', 'point');
-        break;
-      case 'polygon':
-        if (layerData.id === 'beijing-water-areas') {
-          layer = loadGeoJsonLayer('北京市_水系面数据.json', 'polygon');
-        } else if (layerData.id === 'beijing-reservoirs') {
-          layer = loadGeoJsonLayer('北京市水库.json', 'polygon');
-        } else if (layerData.id === 'beijing-districts') {
-          layer = loadGeoJsonLayer('北京区县界.json', 'polygon');
-        }
-        break;
-      case 'line':
-        layer = loadGeoJsonLayer('北京市_水系线数据.json', 'line');
-        break;
-      case 'basemap':
-        // 底图已经添加，无需处理
-        layersToLoad--;
-        return;
-      default:
-        console.log(`未处理的图层类型: ${layerData.type}`);
-        layersToLoad--;
-        return;
-    }
-    
-    if (layer) {
-      mxdLayerObjects.value[layerData.id] = layer;
-      if (layerData.effectiveVisible) {
-        layer.addTo(map.value);
-      }
-      
-      // 监听图层加载完成事件
-      if (layer.on) {
-        layer.on('add', () => {
-          layersLoaded++;
-          if (layersLoaded >= layersToLoad) {
-            console.log('所有图层加载完成');
-            loading.value = false;
-          }
-        });
-      } else {
-        // 如果图层不支持事件，假设它已经加载完成
-        layersLoaded++;
-      }
-    }
-  });
-
-  // 显示MXD图层控制面板
-  showMxdPanel.value = true;
-  
-  // 如果没有图层需要加载，直接标记为加载完成
-  if (layersToLoad === 0) {
-    loading.value = false;
-  }
-  
-  // 防止无限等待，设置一个超时
-      setTimeout(() => {
-    if (loading.value) {
-      console.log('图层加载超时，强制完成');
-      loading.value = false;
-    }
-  }, 5000);
-};
-
-// 清除MXD图层
-const clearMxdLayers = () => {
-  // 从地图中移除所有图层
-  Object.values(mxdLayerObjects.value).forEach(layer => {
-    if (map.value.hasLayer(layer)) {
-      map.value.removeLayer(layer);
-    }
-  });
-  
-  // 清空图层对象记录
-  mxdLayerObjects.value = {};
-  console.log('清除所有MXD图层');
-};
-
-// 切换MXD图层显示/隐藏
-const toggleMxdLayer = (layer) => {
-  // 如果是组图层，需要更新其所有子图层的显示状态
-  if (layer.isGroup) {
-    // 获取该组下所有子图层
-    const childLayers = mxdLayers.value.filter(l => 
-      !l.isGroup && l.id.startsWith(layer.id + '-') || 
-      (layer.children && layer.children.some(child => child.id === l.id))
-    );
-    
-    // 更新所有子图层的可见性状态
-    childLayers.forEach(childLayer => {
-      childLayer.visible = layer.visible;
-      childLayer.effectiveVisible = layer.visible;
-      toggleMxdLayer(childLayer); // 递归处理子图层
-    });
-    return;
-  }
-  
-  const leafletLayer = mxdLayerObjects.value[layer.id];
-  if (leafletLayer) {
-    if (layer.visible) {
-      leafletLayer.addTo(map.value);
-      console.log(`显示图层: ${layer.name}`);
-    } else {
-      map.value.removeLayer(leafletLayer);
-      console.log(`隐藏图层: ${layer.name}`);
-    }
-  }
-};
-
-// 加载GeoJSON图层
-const loadGeoJsonLayer = (filename, type) => {
-  console.log(`加载GeoJSON图层: ${filename}`);
-  
-  // 创建一个空的GeoJSON图层
-  const layer = L.geoJSON(null, {
-    style: () => {
-      // 根据类型设置不同的样式
-      if (type === 'polygon') {
-        return { 
-          color: filename.includes('水') ? '#3388ff' : '#33cc33',
-          weight: 2,
-          opacity: 0.8,
-          fillOpacity: 0.4
-        };
-      } else if (type === 'line') {
-        return {
-          color: '#3388ff',
-          weight: 2,
-          opacity: 0.8
-        };
-      }
-    },
-    pointToLayer: (feature, latlng) => {
-      // 创建点图层
-      return L.circleMarker(latlng, {
-        radius: 4,
-        fillColor: '#ff7800',
-        color: '#000',
-        weight: 1,
-        opacity: 1,
-        fillOpacity: 0.8
-      });
-    },
-    onEachFeature: (feature, layer) => {
-      // 添加弹出信息
-      if (feature.properties && (feature.properties.name || feature.properties.NAME)) {
-        layer.bindPopup(feature.properties.name || feature.properties.NAME);
-      }
-    }
-  });
-  
-  // 异步加载GeoJSON数据
-  fetch(`/Beijing-GeoJson/${filename}`)
-    .then(response => response.json())
-    .then(data => {
-      // 检查GeoJSON的投影系统
-      const crs = data.crs || { type: 'name', properties: { name: 'EPSG:4326' } };
-      console.log(`GeoJSON数据 ${filename} 的投影系统:`, crs);
-      
-      layer.addData(data);
-      console.log(`成功加载GeoJSON数据: ${filename}`);
-      
-      // 适应加载图层的视图
-      if (map.value && layer.getBounds) {
-        try {
-          // 获取图层范围
-          const bounds = layer.getBounds();
-          if (bounds.isValid()) {
-            // 如果是第一个加载的图层，适应视图
-            if (Object.keys(mxdLayerObjects.value).length === 1) {
-              map.value.fitBounds(bounds, { padding: [50, 50] });
-              console.log(`适应图层 ${filename} 的视图范围`);
-            }
-          }
-        } catch (e) {
-          console.warn(`无法获取图层 ${filename} 的范围`, e);
-        }
-      }
-    })
-    .catch(error => {
-      console.error(`加载GeoJSON数据失败: ${filename}`, error);
-    });
-  
-  return layer;
-};
-
-// 打开mxd文件
-const openMxdFile = () => {
-  // 触发隐藏的文件输入框点击
-  mxdFileInput.value.click();
+    zoomControl: false,
+    attributionControl: false
+  }).setView([39.9042, 116.4074], 10)
+  // 不加载任何在线底图
 }
 
-// 处理选择的mxd文件
-const handleMxdFileSelected = (event) => {
-  const file = event.target.files[0];
-  if (!file) return;
-  
-  currentMxdFile.value = file;
-  
-  // 创建加载提示
-  const loadingToast = document.createElement('div');
-  loadingToast.className = 'mxd-loading-toast';
-  loadingToast.innerHTML = `<div class="spinner"></div><p>正在加载 ${file.name}...</p>`;
-  document.body.appendChild(loadingToast);
-  
-  // 读取文件内容（如果需要）
-  const reader = new FileReader();
-  reader.onload = (e) => {
+// 加载GeoJSON数据（Beijing-GeoJson-Tzy目录）
+const loadGeoJSONData = async () => {
+  const dataFiles = {
+    districts: '/Beijing-GeoJson-Tzy/北京区县界.json',
+    waterLines: '/Beijing-GeoJson-Tzy/北京市_水系线数据.json',
+    waterAreas: '/Beijing-GeoJson-Tzy/北京市_水系面数据.geojson',
+    reservoirs: '/Beijing-GeoJson-Tzy/水库面数据.geojson', // 优化：确保水库面数据路径正确
+    settlements: '/Beijing-GeoJson-Tzy/居民地地名.json',
+    reservoirPoints: '/Beijing-GeoJson-Tzy/水库点数据.geojson' // 优化：确保水库点数据路径正确
+  }
+  for (const [key, filePath] of Object.entries(dataFiles)) {
     try {
-      // 这里处理mxd文件
-      console.log('MXD文件已加载:', file.name);
-      
-      // 由于浏览器不能直接处理mxd文件(ArcGIS专用格式)，这里模拟处理完成
-      setTimeout(() => {
-        // 移除加载提示
-        document.body.removeChild(loadingToast);
-        
-        // 创建成功提示
-        const successToast = document.createElement('div');
-        successToast.className = 'mxd-success-toast';
-        successToast.textContent = `MXD文件 "${file.name}" 已成功加载`;
-        document.body.appendChild(successToast);
-        
-        // 3秒后移除成功提示
-        setTimeout(() => {
-          document.body.removeChild(successToast);
-        }, 3000);
-        
-        // 加载MXD图层到地图上
-        loadMxdLayersToMap();
-      }, 1500); // 模拟处理时间
+      const response = await fetch(filePath)
+      const data = await response.json()
+      // 优化：区分点和面类型
+      let layer
+      if (key === 'reservoirPoints') {
+        layer = L.geoJSON(data, {
+          pointToLayer: (feature, latlng) => L.circleMarker(latlng, getLayerStyle(key)),
+          onEachFeature: (feature, lyr) => {
+            if (feature.properties) {
+              lyr.bindPopup(getPopupContent(key, feature.properties))
+              // 移除点击时弹图片面板的逻辑
+            }
+          }
+        })
+      } else if (key === 'reservoirs') {
+        layer = L.geoJSON(data, {
+          style: getLayerStyle(key),
+          onEachFeature: (feature, lyr) => {
+            if (feature.properties) {
+              lyr.bindPopup(getPopupContent(key, feature.properties))
+            }
+          }
+        })
+      } else if (key === 'settlements') {
+        layer = L.geoJSON(data, {
+          pointToLayer: (feature, latlng) => L.circleMarker(latlng, getLayerStyle(key)),
+          onEachFeature: (feature, lyr) => {
+            if (feature.properties) {
+              lyr.bindPopup(getPopupContent(key, feature.properties))
+            }
+          }
+        })
+      } else {
+        layer = L.geoJSON(data, {
+          style: getLayerStyle(key),
+          onEachFeature: (feature, lyr) => {
+            if (feature.properties) {
+              lyr.bindPopup(getPopupContent(key, feature.properties))
+            }
+          }
+        })
+      }
+      layerObjects[key] = layer
+      if (layers[key]) {
+        layer.addTo(map.value)
+        if (key === 'waterAreas' || key === 'reservoirs') {
+          layer.bringToFront()
+        }
+      }
     } catch (error) {
-      console.error('加载MXD文件失败:', error);
-      // 移除加载提示
-      document.body.removeChild(loadingToast);
-      
-      // 创建错误提示
-      const errorToast = document.createElement('div');
-      errorToast.className = 'mxd-error-toast';
-      errorToast.textContent = '加载MXD文件失败，请检查文件格式是否正确';
-      document.body.appendChild(errorToast);
-      
-      // 3秒后移除错误提示
-      setTimeout(() => {
-        document.body.removeChild(errorToast);
-      }, 3000);
+      console.error(`加载${key}数据失败:`, error)
     }
-  };
-  
-  reader.onerror = () => {
-    console.error('读取文件失败');
-    // 移除加载提示
-    document.body.removeChild(loadingToast);
-    
-    // 创建错误提示
-    const errorToast = document.createElement('div');
-    errorToast.className = 'mxd-error-toast';
-    errorToast.textContent = '读取文件失败，请重试';
-    document.body.appendChild(errorToast);
-    
-    // 3秒后移除错误提示
-    setTimeout(() => {
-      document.body.removeChild(errorToast);
-    }, 3000);
-  };
-  
-  // 开始读取文件 - 只是为了获取文件信息，不实际处理mxd内容
-  // 因为浏览器无法直接处理mxd文件，这里只是读取文件作为模拟
-  reader.readAsDataURL(file);
-  
-  // 重置文件输入，允许重新选择同一个文件
-  event.target.value = '';
+  }
+  loading.value = false
 }
 
-// 获取图层图标样式
-const getLayerIconStyle = (layer) => {
-  switch (layer.type) {
-    case 'point':
-      return {
-        backgroundColor: '#ff7800',
-        borderRadius: '50%',
-        width: '10px',
-        height: '10px',
-        display: 'inline-block'
-      };
-    case 'line':
-      return {
-        backgroundColor: '#3388ff',
-        width: '10px',
-        height: '2px',
-        display: 'inline-block'
-      };
-    case 'polygon':
-      return {
-        backgroundColor: layer.id.includes('water') ? '#3388ff' : '#33cc33',
-        width: '10px',
-        height: '10px',
-        display: 'inline-block'
-      };
-    default:
-      return {};
+// 图层样式
+const getLayerStyle = (layerType) => {
+  const styles = {
+    districts: {
+      fillColor: '#b3e5fc', // 淡蓝色
+      weight: 2.5,
+      opacity: 0.8,
+      color: '#0288D1', // 蓝色边线
+      fillOpacity: 0.5,
+      dashArray: '5, 8'
+    },
+    waterLines: {
+      color: '#64B5F6',
+      weight: 2.5,
+      opacity: 0.9
+    },
+    waterAreas: {
+      fillColor: '#29B6F6',
+      weight: 1.5,
+      opacity: 0.9,
+      color: '#0288D1',
+      fillOpacity: 0.7
+    },
+    reservoirs: {
+      fillColor: '#26C6DA',
+      weight: 1.5,
+      opacity: 0.9,
+      color: '#00ACC1',
+      fillOpacity: 0.8
+    },
+    settlements: {
+      radius: 6,
+      fillColor: '#FFF176',
+      color: '#ffffff',
+      weight: 1.5,
+      opacity: 1,
+      fillOpacity: 0.9
+    },
+    reservoirPoints: {
+      radius: 7,
+      fillColor: '#1976D2',
+      color: '#fff',
+      weight: 2,
+      opacity: 1,
+      fillOpacity: 0.95
+    }
   }
-};
+  return styles[layerType] || {}
+}
+
+// 弹窗内容
+const getPopupContent = (layerType, properties) => {
+  let html = '<div class="popup-content">'
+  for (const [key, value] of Object.entries(properties)) {
+    html += `<div><strong>${key}:</strong> ${value !== null && value !== undefined ? value : '未知'}</div>`
+  }
+  // 仅水库点/面显示图片
+  if (layerType === 'reservoirPoints' || layerType === 'reservoirs') {
+    const name = properties.库名 || properties.name || properties.NAME
+    if (name) {
+      html += `
+        <div class="popup-img-block">
+          <img class='popup-reservoir-img' src="/reservoir-images/${name}.jpg" alt="${name}" onerror="this.style.display='none'" />
+          <div class='popup-img-title'>${name}</div>
+          <div class='popup-img-divider'></div>
+        </div>
+      `
+    }
+  }
+  html += '</div>'
+  return html
+}
+
+// 切换图层显示
+const toggleLayer = (layerType) => {
+  const layer = layerObjects[layerType]
+  if (layer) {
+    if (layers[layerType]) {
+      if (!map.value.hasLayer(layer)) {
+        layer.addTo(map.value)
+        if (layerType === 'waterAreas' || layerType === 'reservoirs') {
+          layer.bringToFront()
+        }
+      }
+    } else {
+      if (map.value.hasLayer(layer)) {
+        map.value.removeLayer(layer)
+      }
+    }
+  }
+}
+
+// 新增：查询和渲染工具激活方法
+const activateQuery = () => {
+  activeMapTool.value = 'query'
+}
+const activateRender = () => {
+  activeMapTool.value = 'render'
+}
+
+// 新增：activeMapTool变量
+const activeMapTool = ref('')
+
+const searchText = ref('')
+const searchError = ref('')
+
+// 查询并定位水库点（成功时显示图片面板）
+const handleSearch = () => {
+  searchError.value = ''
+  if (!searchText.value.trim()) {
+    searchError.value = '请输入水库名称'
+    return
+  }
+  const layer = layerObjects.reservoirPoints
+  if (!layer) {
+    searchError.value = '水库点图层未加载'
+    return
+  }
+  let found = false
+  layer.eachLayer(l => {
+    const props = l.feature && l.feature.properties
+    if (props && (props.库名 === searchText.value.trim() || props.name === searchText.value.trim() || props.NAME === searchText.value.trim())) {
+      found = true
+      map.value.setView(l.getLatLng(), 14, { animate: true })
+      l.openPopup()
+      // 高亮效果
+      if (l.setStyle) {
+        l.setStyle({ color: '#ff0000', fillColor: '#ffcccc', weight: 4 })
+        setTimeout(() => layer.resetStyle && layer.resetStyle(l), 2000)
+      }
+      // 查询到后显示图片面板
+      const name = props.库名 || props.name || props.NAME
+      if (name) {
+        reservoirImgUrl.value = `/reservoir-images/${name}.jpg`
+        reservoirImgName.value = name
+        showReservoirImgPanel.value = true
+      } else {
+        showReservoirImgPanel.value = false
+      }
+    }
+  })
+  if (!found) {
+    searchError.value = '未找到对应水库点'
+    showReservoirImgPanel.value = false
+  }
+}
+
+const showReservoirImgPanel = ref(false)
+const reservoirImgUrl = ref('')
+const reservoirImgName = ref('')
+
+// 渲染对话框相关
+const reservoirPointFields = ref([
+  '库名','多年平均水位','多年平均蓄水量','多年日平均入库流量','多年日平均出库流量','总库容','汛限水位'
+])
+const renderField = ref('多年平均水位')
+const renderOp = ref('>')
+const renderValue1 = ref('')
+const renderValue2 = ref('')
+const renderColor = ref('#ff4d4f')
+const renderElseColor = ref('#1976d2')
+const renderError = ref('')
+
+const handleRender = () => {
+  renderError.value = ''
+  const layer = layerObjects.reservoirPoints
+  if (!layer) {
+    renderError.value = '水库点图层未加载'
+    return
+  }
+  if (!renderField.value) {
+    renderError.value = '请选择字段'
+    return
+  }
+  let v1 = parseFloat(renderValue1.value)
+  let v2 = parseFloat(renderValue2.value)
+  if (renderOp.value === 'range' && (isNaN(v1) || isNaN(v2))) {
+    renderError.value = '请输入区间数值'
+    return
+  }
+  if (renderOp.value !== 'range' && isNaN(v1)) {
+    renderError.value = '请输入数值'
+    return
+  }
+  layer.eachLayer(l => {
+    const props = l.feature && l.feature.properties
+    let val = parseFloat(props[renderField.value])
+    let match = false
+    if (!isNaN(val)) {
+      switch (renderOp.value) {
+        case '>': match = val > v1; break
+        case '<': match = val < v1; break
+        case '>=': match = val >= v1; break
+        case '<=': match = val <= v1; break
+        case '==': match = val === v1; break
+        case 'range': match = val >= Math.min(v1,v2) && val <= Math.max(v1,v2); break
+      }
+    }
+    l.setStyle({
+      fillColor: match ? renderColor.value : renderElseColor.value,
+      color: match ? renderColor.value : renderElseColor.value,
+      fillOpacity: 0.95,
+      opacity: 1,
+      weight: 2
+    })
+  })
+}
 
 onMounted(() => {
-  setTimeout(() => {
-    initMap()
-    addPopupStyles()
-  }, 100)
-})
-onUnmounted(() => {
-  if (map.value) {
-    // 清理所有事件监听器
-    map.value.off('click', handleZoomInClick);
-    map.value.off('click', handleZoomOutClick);
-    map.value.off('click', handleSelectFeatureClick);
-    map.value.off('click', handleIdentifyFeatureClick);
-    map.value.off('moveend');
-    map.value.off('zoomend');
-    
-    // 移除平移相关的鼠标事件监听器
-    const mapElement = document.getElementById('editor-map');
-    if (mapElement) {
-      mapElement.removeEventListener('mousedown', handlePanMouseDown);
-      mapElement.removeEventListener('mouseup', handlePanMouseUp);
-      mapElement.removeEventListener('mouseleave', handlePanMouseUp);
-    }
-    
-    map.value.remove()
-  }
+  initMap()
+  loadGeoJSONData()
 })
 </script>
 
@@ -1727,5 +919,236 @@ body {
 
 .popup-content div {
   margin-bottom: 5px;
+}
+
+.search-bar-modal {
+  position: absolute;
+  top: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2001;
+  background: rgba(255,255,255,0.98);
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.13);
+  padding: 18px 24px 12px 18px;
+  min-width: 320px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+.search-bar-container {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+.search-input {
+  flex: 1;
+  padding: 7px 12px;
+  font-size: 15px;
+  border: 1px solid #d0d0d0;
+  border-radius: 6px;
+  outline: none;
+  margin-right: 10px;
+}
+.search-btn {
+  background: #1890ff;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 7px 18px;
+  font-size: 15px;
+  cursor: pointer;
+  margin-right: 8px;
+  transition: background 0.2s;
+}
+.search-btn:hover {
+  background: #40a9ff;
+}
+.search-close {
+  font-size: 22px;
+  color: #888;
+  cursor: pointer;
+  margin-left: 2px;
+  user-select: none;
+}
+.search-error {
+  color: #f5222d;
+  margin-top: 8px;
+  font-size: 14px;
+}
+.popup-img-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 12px 0 4px 0;
+}
+.popup-reservoir-img {
+  max-width: 220px;
+  max-height: 120px;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px #bbb;
+  margin-bottom: 6px;
+  transition: transform 0.25s cubic-bezier(.4,2,.6,1.2), box-shadow 0.2s;
+  cursor: pointer;
+}
+.popup-reservoir-img:hover {
+  transform: scale(1.08);
+  box-shadow: 0 6px 24px #888;
+}
+.popup-img-title {
+  font-size: 15px;
+  color: #333;
+  font-weight: 500;
+  margin-bottom: 4px;
+  letter-spacing: 1px;
+}
+.popup-img-divider {
+  width: 80%;
+  height: 1px;
+  background: #ececec;
+  margin: 6px 0 0 0;
+  border-radius: 1px;
+}
+.reservoir-img-panel {
+  position: absolute;
+  top: 220px;
+  right: 32px;
+  min-width: 240px;
+  max-width: 320px;
+  background: rgba(255,255,255,0.98);
+  border-radius: 14px;
+  box-shadow: 0 4px 18px rgba(0,0,0,0.13);
+  padding: 18px 18px 12px 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 1201;
+}
+.img-panel-close {
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  font-size: 22px;
+  color: #888;
+  cursor: pointer;
+  user-select: none;
+}
+.reservoir-img-main {
+  max-width: 220px;
+  max-height: 120px;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px #bbb;
+  margin-bottom: 8px;
+  margin-top: 8px;
+  transition: transform 0.25s cubic-bezier(.4,2,.6,1.2), box-shadow 0.2s;
+  cursor: pointer;
+}
+.reservoir-img-main:hover {
+  transform: scale(1.08);
+  box-shadow: 0 6px 24px #888;
+}
+.reservoir-img-title {
+  font-size: 16px;
+  color: #222;
+  font-weight: 500;
+  margin-bottom: 2px;
+  letter-spacing: 1px;
+  text-align: center;
+}
+.render-modal {
+  position: absolute;
+  top: 60px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2002;
+  background: rgba(255,255,255,0.99);
+  border-radius: 14px;
+  box-shadow: 0 4px 18px rgba(0,0,0,0.13);
+  min-width: 340px;
+  max-width: 420px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.render-modal-content {
+  width: 100%;
+  padding: 18px 24px 18px 24px;
+}
+.render-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 18px;
+  font-weight: 600;
+  color: #222;
+  margin-bottom: 12px;
+}
+.render-modal-close {
+  font-size: 22px;
+  color: #888;
+  cursor: pointer;
+  user-select: none;
+}
+.render-modal-body {
+  width: 100%;
+}
+.render-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 14px;
+}
+.render-row label {
+  min-width: 54px;
+  color: #555;
+  font-size: 15px;
+  margin-right: 8px;
+}
+.render-select {
+  min-width: 120px;
+  font-size: 15px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid #d0d0d0;
+  margin-right: 10px;
+}
+.render-input {
+  width: 70px;
+  font-size: 15px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid #d0d0d0;
+  margin-right: 10px;
+}
+.render-color {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 6px;
+  margin-right: 6px;
+  box-shadow: 0 1px 4px #eee;
+}
+.render-color-label {
+  font-size: 13px;
+  color: #888;
+  margin-right: 12px;
+}
+.render-btn {
+  background: #1890ff;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 7px 24px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.render-btn:hover {
+  background: #40a9ff;
+}
+.render-error {
+  color: #f5222d;
+  margin-top: 8px;
+  font-size: 14px;
 }
 </style> 
