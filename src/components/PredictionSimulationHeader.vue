@@ -23,10 +23,13 @@
         <router-link to="/prediction-simulation" class="action-icon" title="预测模拟">
           <img src="/icons/预测模拟.png" alt="预测模拟" width="32" height="32" />
         </router-link>
+        <router-link to="/water-pollution-simulation" class="action-icon" title="水污染扩散模拟">
+          <img src="/icons/水库.png" alt="水污染扩散模拟" width="32" height="32" />
+        </router-link>
       </div>
       
       <div class="header-actions">
-        <!-- 第五个功能图标 - 系统设置 -->
+        <!-- 第六个功能图标 - 系统设置 -->
         <div class="action-icon" title="系统设置">
           <img src="/icons/设置.png" alt="系统设置" width="32" height="32" />
         </div>
