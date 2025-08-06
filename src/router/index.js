@@ -6,6 +6,7 @@ const MapEditor = () => import('../views/MapEditor.vue')
 const DataManagement = () => import('../views/DataManagement.vue')
 const StatisticsAnalysis = () => import('../views/StatisticsAnalysis.vue')
 const PredictionSimulation = () => import('../views/PredictionSimulation.vue')
+const WaterPollutionSimulation = () => import('../views/WaterPollutionSimulation.vue')
 
 // 定义路由
 const routes = [
@@ -33,6 +34,11 @@ const routes = [
     path: '/prediction-simulation',
     name: 'PredictionSimulation',
     component: PredictionSimulation
+  },
+  {
+    path: '/water-pollution-simulation',
+    name: 'WaterPollutionSimulation',
+    component: WaterPollutionSimulation
   }
 ]
 

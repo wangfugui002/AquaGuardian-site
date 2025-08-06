@@ -39,26 +39,10 @@
           </label>
         </div>
         
-        <!-- 模拟控制 -->
-        <div class="simulation-control">
-          <h4>模拟功能</h4>
-          <button @click="showLakeSimulation = !showLakeSimulation" class="simulation-btn">
-            {{ showLakeSimulation ? '隐藏' : '显示' }}湖泊污染模拟
-          </button>
-          <p v-if="showLakeSimulation" class="simulation-hint">
-            💡 点击地图上的湖泊多边形来选择要模拟的湖泊
-          </p>
-        </div>
+
       </div>
       
-      <!-- 湖泊污染扩散模拟面板 -->
-      <LakePollutionSimulation 
-        v-if="showLakeSimulation && layers.waterAreas"
-        ref="lakeSimulationRef"
-        :map="map"
-        :water-areas-layer="layerObjects.waterAreas"
-        @simulation-update="onSimulationUpdate"
-      />
+
       
       <!-- 数据信息面板 -->
       <div class="data-info">
@@ -81,19 +65,16 @@
 <script>
 import { ref, onMounted, reactive } from 'vue'
 import L from 'leaflet'
-import LakePollutionSimulation from '../components/LakePollutionSimulation.vue'
 import PageHeader from '../components/Header.vue'
 
 export default {
   name: 'Home',
   components: {
-    LakePollutionSimulation,
     PageHeader
   },
   setup() {
     const map = ref(null)
     const loading = ref(true)
-    const showLakeSimulation = ref(false)
     const systemTitle = ref('环境风险分析与模拟系统')
     
     // 图层状态
@@ -114,8 +95,7 @@ export default {
       settlements: null
     })
     
-    // 湖泊模拟组件引用
-    const lakeSimulationRef = ref(null)
+
     
     // 数据统计
     const dataStats = reactive({
@@ -160,15 +140,7 @@ export default {
                   layer.bindPopup(getPopupContent(key, feature.properties))
                 }
                 
-                // 为水系面数据添加点击事件
-                if (key === 'waterAreas') {
-                  layer.on('click', (e) => {
-                    console.log('点击湖泊:', feature.properties) // 调试输出
-                    if (showLakeSimulation.value && lakeSimulationRef.value) {
-                      lakeSimulationRef.value.onLakeSelect(feature)
-                    }
-                  })
-                }
+
               }
             })
             
@@ -268,7 +240,7 @@ export default {
       if (layer) {
         if (layers[layerType]) {
           layer.addTo(map.value)
-          // 切换湖泊模拟时自动将水系面图层置顶
+          // 自动将水系面图层置顶
           if (layerType === 'waterAreas') {
             layer.bringToFront()
           }
@@ -278,10 +250,7 @@ export default {
       }
     }
     
-    // 处理模拟更新
-    const onSimulationUpdate = (data) => {
-      console.log('模拟数据更新:', data)
-    }
+
     
     onMounted(() => {
       initMap()
@@ -294,11 +263,8 @@ export default {
       layerObjects,
       map,
       dataStats,
-      showLakeSimulation,
-      lakeSimulationRef,
       systemTitle,
-      toggleLayer,
-      onSimulationUpdate
+      toggleLayer
     }
   }
 }
