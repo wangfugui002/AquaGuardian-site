@@ -569,15 +569,24 @@ export default {
         props.map.removeLayer(pollutionSourceMarker.value)
       }
       
-      // 创建新的污染源标记
-      pollutionSourceMarker.value = L.marker(position, {
-        icon: L.divIcon({
-          className: 'pollution-source-marker',
-          html: '⚠️',
-          iconSize: [30, 30],
-          iconAnchor: [15, 15]
-        })
-      }).addTo(props.map)
+      // 创建新的污染源标记 - 使用circleMarker确保跟随地图缩放
+      pollutionSourceMarker.value = L.circleMarker(position, {
+        radius: 8,
+        fillColor: '#e74c3c',
+        color: '#c0392b',
+        weight: 2,
+        opacity: 1,
+        fillOpacity: 0.8
+      })
+      
+      // 添加弹窗信息
+      pollutionSourceMarker.value.bindPopup(`
+        <strong>污染源位置</strong><br>
+        纬度: ${position.lat.toFixed(6)}<br>
+        经度: ${position.lng.toFixed(6)}
+      `)
+      
+      props.map.addLayer(pollutionSourceMarker.value)
       
       console.log('设置污染源位置:', position)
     }
@@ -1666,17 +1675,7 @@ class RiverDiffusionModel {
   color: #666;
 }
 
-/* 污染源标记样式 */
-:global(.pollution-source-marker) {
-  background: #f44336;
-  border: 2px solid white;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 16px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-}
+
 
 @media (max-width: 768px) {
   .river-simulation-panel {
