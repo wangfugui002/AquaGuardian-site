@@ -85,10 +85,6 @@
           <label>纵向弥散系数 (m²/s):</label>
           <input type="number" v-model="longitudinalDiffusion" min="0.1" max="100" step="0.1" class="form-input">
         </div>
-        <div class="param-group">
-          <label>横向弥散系数 (m²/s):</label>
-          <input type="number" v-model="transverseDiffusion" min="0.1" max="100" step="0.1" class="form-input">
-        </div>
       </div>
 
       <!-- 步骤5: 设置模拟参数 -->
@@ -222,7 +218,6 @@ export default {
     const riverDepth = ref(3)
     const flowVelocity = ref(1.5)
     const longitudinalDiffusion = ref(10)
-    const transverseDiffusion = ref(5)
     
     // 模拟参数
     const gridSpacing = ref(20)
@@ -593,13 +588,13 @@ export default {
     
     // 污染物类型变化处理
     const onPollutantChange = () => {
-      // 根据污染物类型设置默认参数
+      // 根据污染物类型设置默认参数（河流环境）
       const defaultParams = {
-        organic: { mass: 100, decay: 0.1 },
-        inorganic: { mass: 50, decay: 0.05 },
-        heavy_metal: { mass: 10, decay: 0.001 },
-        nutrient: { mass: 200, decay: 0.2 },
-        pesticide: { mass: 5, decay: 0.01 }
+        organic: { mass: 500, decay: 0.12 },      // 有机污染物：中等质量，中等降解
+        inorganic: { mass: 300, decay: 0.06 },    // 无机污染物：较小质量，较慢降解
+        heavy_metal: { mass: 100, decay: 0.001 }, // 重金属：小质量，极慢降解
+        nutrient: { mass: 800, decay: 0.3 },      // 营养盐：较大质量，快速降解
+        pesticide: { mass: 50, decay: 0.03 }      // 农药：小质量，较慢降解
       }
       
       const params = defaultParams[pollutantType.value]
@@ -1187,7 +1182,6 @@ export default {
       riverDepth,
       flowVelocity,
       longitudinalDiffusion,
-      transverseDiffusion,
       gridSpacing,
       simulationHours,
       timeStep,

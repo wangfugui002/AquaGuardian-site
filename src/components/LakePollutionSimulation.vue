@@ -195,15 +195,16 @@ export default {
     const pollutionSourceMarker = ref(null)
     
     // 污染物参数
-    const pollutantType = ref(0)
-    const pollutantMass = ref(2000)
-    const decayRate = ref(0.001)
+    const pollutantType = ref('organic')
+    const pollutantMass = ref(1000)
+    const decayRate = ref(0.1)
     
     const pollutantOptions = [
-      { value: 0, label: '硝基苯', k: 0.15 },
-      { value: 1, label: '苯酚', k: 0.15 },
-      { value: 2, label: '氨氮', k: 0.18 },
-      { value: 3, label: '石油类', k: 0 }
+      { value: 'organic', label: '有机污染物' },
+      { value: 'inorganic', label: '无机污染物' },
+      { value: 'heavy_metal', label: '重金属' },
+      { value: 'nutrient', label: '营养盐' },
+      { value: 'pesticide', label: '农药' }
     ]
     
     // 湖泊参数
@@ -250,10 +251,20 @@ export default {
       emit('close')
     }
     
-    const onPollutantChange = (value) => {
-      const pollutant = pollutantOptions.find(p => p.value === value)
-      if (pollutant) {
-        decayRate.value = pollutant.k
+    const onPollutantChange = () => {
+      // 根据污染物类型设置默认参数（湖泊环境）
+      const defaultParams = {
+        organic: { mass: 2000, decay: 0.15 },      // 有机污染物：中等质量，中等降解
+        inorganic: { mass: 1500, decay: 0.08 },    // 无机污染物：较大质量，较慢降解
+        heavy_metal: { mass: 500, decay: 0.002 },  // 重金属：较小质量，极慢降解
+        nutrient: { mass: 3000, decay: 0.25 },     // 营养盐：大质量，快速降解
+        pesticide: { mass: 200, decay: 0.05 }      // 农药：小质量，较慢降解
+      }
+      
+      const params = defaultParams[pollutantType.value]
+      if (params) {
+        pollutantMass.value = params.mass
+        decayRate.value = params.decay
       }
     }
     
@@ -921,6 +932,9 @@ export default {
     watch(() => props['water-areas-layer'], () => {
       initializeLakeOptions()
     }, { immediate: true })
+    
+    // 初始化污染物参数
+    onPollutantChange()
     
     return {
       // 状态
