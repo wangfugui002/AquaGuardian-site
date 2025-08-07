@@ -1,6 +1,6 @@
 <template>
   <div class="prediction-simulation-container">
-    <prediction-simulation-header title="预测模拟"></prediction-simulation-header>
+    <prediction-simulation-header title="水位预警"></prediction-simulation-header>
     
     <div class="prediction-simulation-content">
       <!-- 显示地图 (现在无论什么功能都会显示地图) -->
@@ -169,7 +169,7 @@
           <button class="close-btn" @click="closePlanModal">&times;</button>
         </div>
         
-        <div class="analysis-modal-body" v-if="planData">
+        <div class="analysis-modal-body" v-if="planData" style="contain: layout style;">
           <!-- 预案信息显示 -->
           <div class="plan-info-section">
             <div class="plan-status-indicator" :class="planData.type === 'warning' ? 'status-warning' : 'status-danger'">
@@ -193,9 +193,10 @@
             <div class="measures-list">
               <div 
                 v-for="(measure, index) in planData.measures" 
-                :key="index" 
+                :key="`measure-${index}`" 
                 class="measure-item"
                 :class="planData.type === 'warning' ? 'warning-measure' : 'danger-measure'"
+                style="contain: layout style;"
               >
                 <div class="measure-number">{{ index + 1 }}</div>
                 <div class="measure-content">{{ measure }}</div>
@@ -515,6 +516,9 @@ export default {
               }
             }
           }).addTo(map);
+          
+          // 确保区县边界在最底层
+          mapLayers.district.bringToBack();
         }
         
         // 加载水系线
@@ -529,6 +533,12 @@ export default {
               opacity: 0.9
             }
           }).addTo(map);
+          
+          // 确保水系线在区县边界之上
+          if (mapLayers.district && map.hasLayer(mapLayers.district)) {
+            mapLayers.waterLine.bringToBack();
+            mapLayers.district.bringToBack();
+          }
         }
         
         // 加载水库
@@ -679,6 +689,15 @@ export default {
               }
             }
           }).addTo(map);
+          
+          // 确保水库在水系线之上，区县边界在最底层
+          if (mapLayers.waterLine && map.hasLayer(mapLayers.waterLine)) {
+            mapLayers.reservoir.bringToBack();
+            mapLayers.waterLine.bringToBack();
+          }
+          if (mapLayers.district && map.hasLayer(mapLayers.district)) {
+            mapLayers.district.bringToBack();
+          }
         }
         
         // 加载监测点
@@ -840,10 +859,24 @@ export default {
                       </div>
                       
                       <div class="popup-section">
-                        <h5>预警分析</h5>
-                        <div class="warning-input">
-                          <input type="number" id="water-level-input-${pointName}" placeholder="请输入当前水位" step="0.01">
-                          <button id="warning-btn-${pointName}" class="warning-btn">预警分析</button>
+                        <div class="section-header">
+                          <div class="section-icon">⚠️</div>
+                          <h5>预警分析</h5>
+                        </div>
+                        <div class="warning-input-container">
+                          <div class="input-group">
+                            <input 
+                              type="number" 
+                              id="water-level-input-${pointName}" 
+                              placeholder="请输入当前水位" 
+                              step="0.01"
+                              class="modern-input"
+                            >
+                          </div>
+                          <button id="warning-btn-${pointName}" class="modern-warning-btn">
+                            <span class="btn-icon">🔍</span>
+                            <span class="btn-text">预警分析</span>
+                          </button>
                         </div>
                       </div>
                     ` : ''}
@@ -857,8 +890,19 @@ export default {
                 layer.on('popupopen', (e) => {
                   const warningBtn = document.getElementById(`warning-btn-${pointName}`);
                   const waterLevelInput = document.getElementById(`water-level-input-${pointName}`);
+                  const currentLevelElement = document.getElementById(`current-level-${pointName}`);
                   
                   if (warningBtn && waterLevelInput && reservoirInfo[pointName]) {
+                    // 添加输入事件监听器，实时更新当前水位显示
+                    waterLevelInput.addEventListener('input', (e) => {
+                      const inputValue = parseFloat(e.target.value);
+                      if (!isNaN(inputValue) && currentLevelElement) {
+                        currentLevelElement.textContent = `${inputValue}米`;
+                      } else if (e.target.value === '' && currentLevelElement) {
+                        // 当输入框为空时，恢复显示原始水位
+                        currentLevelElement.textContent = reservoirInfo[pointName]['当前水位'];
+                      }
+                    });
                     warningBtn.onclick = () => {
                       const inputValue = parseFloat(waterLevelInput.value);
                       if (isNaN(inputValue)) {
@@ -866,8 +910,15 @@ export default {
                         return;
                       }
                       
-                      // 显示加载过程
-                      warningBtn.textContent = '分析中...';
+                      // 显示加载进度条
+                      warningBtn.innerHTML = `
+                        <div class="loading-progress">
+                          <div class="progress-bar">
+                            <div class="progress-fill"></div>
+                          </div>
+                          <span class="loading-text">分析中...</span>
+                        </div>
+                      `;
                       warningBtn.disabled = true;
                       warningBtn.style.backgroundColor = '#999';
                       
@@ -878,6 +929,12 @@ export default {
                       setTimeout(() => {
                       // 更新水库信息数据中的当前水位
                       reservoirInfo[pointName]['当前水位'] = `${inputValue}米`;
+                      
+                      // 实时更新弹窗中显示的当前水位
+                      const currentLevelElement = document.getElementById(`current-level-${pointName}`);
+                      if (currentLevelElement) {
+                        currentLevelElement.textContent = `${inputValue}米`;
+                      }
                       
                       const floodLimit = parseFloat(reservoirInfo[pointName]['汛限水位'].replace('米', ''));
                       const maxLevel = parseFloat(reservoirInfo[pointName]['历史最高水位'].replace('米', ''));
@@ -1043,18 +1100,24 @@ export default {
                         });
                         
                         // 恢复按钮状态
-                        warningBtn.textContent = '预警分析';
+                        warningBtn.innerHTML = `
+                          <span class="btn-icon">🔍</span>
+                          <span class="btn-text">预警分析</span>
+                        `;
                         warningBtn.disabled = false;
                         warningBtn.style.backgroundColor = '#2196F3';
                         
                         console.log(`监测点 ${pointName} 颜色已更新为: ${newColor}, 输入水位: ${inputValue}米, 状态: ${status}`);
-                      }, 1500); // 1.5秒的加载时间
+                      }, 1000); // 1秒的加载时间，与进度条动画匹配
                     };
                   }
                 });
               }
             }
           }).addTo(map);
+          
+          // 确保监测点在最上层
+          mapLayers.monitoringPoints.bringToFront();
         }
         
         // 调整地图视图以适应所有图层
@@ -1081,17 +1144,40 @@ export default {
         if (!mapLayers[layerName]) {
           loadWarningLayers();
         } else {
-          // 图层已存在，添加到地图
+          // 图层已存在，添加到地图并设置正确的层级顺序
           mapLayers[layerName].addTo(map);
           
-          // 如果是区县图层，同时显示标注
+          // 设置图层层级顺序：区县边界在最底层，监测点在最上层
           if (layerName === 'district') {
+            // 区县边界放在最底层
+            mapLayers[layerName].bringToBack();
+            
+            // 同时显示标注
             districtLabels.forEach(label => {
               if (!map.hasLayer(label)) {
                 label.addTo(map);
               }
             });
+          } else if (layerName === 'waterLine') {
+            // 水系线放在区县边界之上
+            if (mapLayers.district && map.hasLayer(mapLayers.district)) {
+              mapLayers[layerName].bringToBack();
+              mapLayers.district.bringToBack();
+            }
+          } else if (layerName === 'reservoir') {
+            // 水库放在水系线之上
+            if (mapLayers.waterLine && map.hasLayer(mapLayers.waterLine)) {
+              mapLayers[layerName].bringToBack();
+              mapLayers.waterLine.bringToBack();
+            }
+            if (mapLayers.district && map.hasLayer(mapLayers.district)) {
+              mapLayers.district.bringToBack();
+            }
+          } else if (layerName === 'monitoringPoints') {
+            // 监测点放在最上层
+            mapLayers[layerName].bringToFront();
           }
+          
           // 如果是监测点图层，重新加载以确保正确显示
           if (layerName === 'monitoringPoints') {
             loadWarningLayers();
@@ -1276,29 +1362,48 @@ export default {
     const showEmergencyPlan = (planType) => {
       const reservoirName = analysisData.value?.pointName || '未知水库';
       const currentLevel = analysisData.value?.inputValue || 0;
+      const maxLevel = analysisData.value?.maxLevel || 0;
       
       let planTitle = '';
       let planMeasures = [];
       
       // 根据不同水库和预警级别设置具体预案
-      const getReservoirPlans = (reservoir, type) => {
+      const getReservoirPlans = (reservoir, type, currentLevel, maxLevel) => {
+        // 检查是否超过历史最高水位3米
+        const isOverMax3M = currentLevel > maxLevel + 3;
+        
         const plans = {
-          '白河堡水库': {
+          '密云水库': {
             warning: [
               '加密大坝巡查（2小时一次）',
-              '向下游乡镇、北京市水务局、官厅水库管理处滚动报送水情',
-              '视雨情提前6小时开启泄洪洞，控制下泄≤20m³/s',
-              '保证下游河道不超警戒流量',
+              '向下游乡镇、北京市水务局滚动报送水情',
               '启动二级应急响应',
+              '视雨情提前6小时开启泄洪闸，控制下泄≤100m³/s',
+              '保证下游河道不超警戒流量',
               '加强气象监测和预报',
               '检查泄洪设施运行状态',
-              '通知延庆区防汛指挥部',
+              '通知密云区防汛指挥部',
               '准备应急抢险物资和队伍'
             ],
-            danger: [
-              '泄洪洞与输水洞全开，最大下泄60m³/s',
-              '提前12小时组织白河峡谷及张山营镇5个险村680人转移',
-              '请求市防指调派武警水电部队进驻坝区抢险',
+            danger: isOverMax3M ? [
+              '洪水预警升级至最高级别',
+              '自泄洪闸全开，逐级增大至1120m³/s（建库以来最大泄量）',
+              '提前48h完成密云、怀柔、顺义、通州4区20余万人避险转移',
+              '下游潮白河沿线堤防24h巡查、桥梁封闭、泵站预排',
+              '启动国家级应急响应，请求中央支援',
+              '建立跨省市联合指挥部，协调京津冀三地联动',
+              '启用备用泄洪通道和应急溢洪道',
+              '组织武警、消防、解放军等专业救援力量进驻',
+              '启动直升机空中监测和救援',
+              '建立临时医疗救治点和物资储备中心',
+              '实施交通管制，确保救援通道畅通',
+              '启动卫星通信和应急通信系统',
+              '组织专家团队现场评估大坝安全状况',
+              '准备启用下游蓄滞洪区进行分洪',
+              '启动媒体24小时滚动播报，发布紧急通告'
+            ] : [
+              '开启全部泄洪闸，最大下泄500m³/s',
+              '提前24小时组织下游密云、怀柔等区县人员转移',
               '启动一级（最高级）应急响应',
               '实施24小时不间断监测',
               '协调下游河道清障和分洪准备',
@@ -1308,53 +1413,43 @@ export default {
               '向市委市政府紧急报告'
             ]
           },
-          '密云水库': {
-            warning: [
-              '执行24小时值班、每2小时报告制度',
-              '加密大坝安全监测',
-              '启动二级应急响应',
-              '向市水务局和相关区县滚动报送水情',
-              '检查潮河、白河泄洪闸运行状态',
-              '通知下游密云、怀柔、顺义等区做好防汛准备',
-              '准备启动预泄措施',
-              '加强与气象部门联系',
-              '调度应急抢险队伍待命'
-            ],
-            danger: [
-              '全开潮河、白河泄洪闸、九松山副坝',
-              '下游潮白河干流按3500m³/s控泄',
-              '提前36小时完成潮白河右堤路、牛栏山—通州段滩区人员转移',
-              '顺义区启动防洪Ⅰ级响应',
-              '启动一级（最高级）应急响应',
-              '实施24小时现场指挥',
-              '协调京津冀三地联合调度',
-              '启动应急广播和手机预警',
-              '请求武警、解放军支援',
-              '建立医疗救援和后勤保障体系'
-            ]
-          },
           '十三陵水库': {
             warning: [
-              '加密巡查、预泄10m³/s',
+              '加密大坝巡查（2小时一次）',
+              '向下游昌平区防汛指挥部滚动报送水情',
               '启动二级应急响应',
-              '每2小时向昌平区防汛指挥部报告水情',
-              '检查溢洪道设施运行状态',
-              '通知下游东沙河沿线做好防洪准备',
-              '准备应急抢险物资',
-              '加强大坝安全监测',
-              '协调气象部门加密预报',
-              '通知相关旅游景区做好游客疏散准备'
+              '视雨情提前6小时开启溢洪道，控制下泄≤15m³/s',
+              '保证下游东沙河不超警戒流量',
+              '加强气象监测和预报',
+              '检查泄洪设施运行状态',
+              '通知昌平区防汛指挥部',
+              '准备应急抢险物资和队伍'
             ],
-            danger: [
-              '溢洪道全开，下泄流量逐级增至30m³/s',
-              '提前36小时实施东沙河沿线道路封闭、人员转移',
-              '昌平区防汛指挥部现场指挥，备足抢险队伍300人、砂石料5000t',
+            danger: isOverMax3M ? [
+              '启动特级应急响应（最高级别）',
+              '溢洪道全开，下泄30m³/s，启用备用溢洪道',
+              '提前36h封闭东沙河沿线道路、转移昌平区沿河5村2000余人',
+              '抢险队伍300人、砂石料5000t现场待命',
+              '启动国家级应急响应，请求中央支援',
+              '建立昌平区应急指挥部，协调全区力量',
+              '启用直升机空中监测和救援',
+              '组织武警、消防等专业救援力量进驻',
+              '建立临时医疗救治点和物资储备中心',
+              '实施交通管制，确保救援通道畅通',
+              '启动卫星通信和应急通信系统',
+              '组织专家团队现场评估大坝安全状况',
+              '启动媒体24小时滚动播报，发布紧急通告',
+              '协调周边水库联合调度，减轻压力',
+              '准备启用下游蓄滞洪区进行分洪'
+            ] : [
+              '溢洪道全开，下泄25m³/s',
+              '提前24小时组织东沙河沿线人员转移',
               '启动一级（最高级）应急响应',
               '实施24小时不间断监测',
-              '协调十三陵景区全面停止旅游活动',
-              '启动应急广播和村村通预警',
-              '建立医疗救援点',
-              '请求市防指调派专业抢险队伍',
+              '协调下游河道清障和分洪准备',
+              '启动应急广播和预警信号',
+              '建立现场指挥部',
+              '联系医疗救援和后勤保障队伍',
               '向市委市政府紧急报告'
             ]
           },
@@ -1370,7 +1465,25 @@ export default {
               '准备应急抢险物资和队伍',
               '加强气象水文监测'
             ],
-            danger: [
+            danger: isOverMax3M ? [
+              '京津冀三地联动特级响应（最高级别）',
+              '最大下泄3500m³/s，启用所有泄洪设施',
+              '永定河泛区、三角淀蓄滞洪区提前分洪',
+              '固安、大兴等6乡镇2.1万人提前48h转移',
+              '启动国家级应急响应，请求中央支援',
+              '建立京津冀三地联合指挥部，协调三省力量',
+              '启用备用泄洪通道和应急溢洪道',
+              '组织武警、消防、解放军等专业救援力量进驻',
+              '启动直升机空中监测和救援',
+              '建立跨省市临时医疗救治点和物资储备中心',
+              '实施跨省市交通管制，确保救援通道畅通',
+              '启动卫星通信和应急通信系统',
+              '组织国家级专家团队现场评估大坝安全状况',
+              '启动媒体24小时滚动播报，发布紧急通告',
+              '协调周边水库联合调度，减轻压力',
+              '准备启用更多下游蓄滞洪区进行分洪',
+              '建立跨省市应急物资调配机制'
+            ] : [
               '开启全部泄洪孔，最大下泄3500m³/s',
               '下游永定河泛区、三角淀蓄滞洪区做好分洪准备',
               '提前48小时组织河北固安、北京大兴等6个乡镇2.1万人转移',
@@ -1382,6 +1495,543 @@ export default {
               '请求水利部和国家防总支援',
               '向国务院和相关省市政府紧急报告'
             ]
+          },
+          '海子水库': {
+            warning: [
+              '加密大坝巡查（2小时一次）',
+              '向下游平谷区防汛指挥部滚动报送水情',
+              '启动二级应急响应',
+              '视雨情提前6小时开启泄洪闸，控制下泄≤50m³/s',
+              '保证下游河道不超警戒流量',
+              '加强气象监测和预报',
+              '检查泄洪设施运行状态',
+              '通知平谷区防汛指挥部',
+              '准备应急抢险物资和队伍'
+            ],
+            danger: isOverMax3M ? [
+              '启动特级应急响应（最高级别）',
+              '立即预腾库容，加大下泄削峰',
+              '重点河段拉警戒线、设警示标志',
+              '加密监测（小时级）',
+              '断电时启用备用电源+移动发电机保障闸门启闭',
+              '启动国家级应急响应，请求中央支援',
+              '建立平谷区应急指挥部，协调全区力量',
+              '启用备用泄洪通道和应急溢洪道',
+              '组织武警、消防等专业救援力量进驻',
+              '启动直升机空中监测和救援',
+              '建立临时医疗救治点和物资储备中心',
+              '实施交通管制，确保救援通道畅通',
+              '启动卫星通信和应急通信系统',
+              '组织专家团队现场评估大坝安全状况',
+              '启动媒体24小时滚动播报，发布紧急通告',
+              '协调周边水库联合调度，减轻压力',
+              '准备启用下游蓄滞洪区进行分洪'
+            ] : [
+              '开启全部泄洪闸，最大下泄200m³/s',
+              '提前24小时组织下游平谷区人员转移',
+              '启动一级（最高级）应急响应',
+              '实施24小时不间断监测',
+              '协调下游河道清障和分洪准备',
+              '启动应急广播和预警信号',
+              '建立现场指挥部',
+              '联系医疗救援和后勤保障队伍',
+              '向市委市政府紧急报告'
+            ]
+          },
+          '白河堡水库': {
+            warning: [
+              '加密大坝巡查（2小时一次）',
+              '向下游乡镇、北京市水务局、官厅水库管理处滚动报送水情',
+              '启动二级应急响应',
+              '视雨情提前6小时开启泄洪洞，控制下泄≤20m³/s',
+              '保证下游河道不超警戒流量',
+              '加强气象监测和预报',
+              '检查泄洪设施运行状态',
+              '通知延庆区防汛指挥部',
+              '准备应急抢险物资和队伍'
+            ],
+            danger: isOverMax3M ? [
+              '启动特级应急响应（最高级别）',
+              '泄洪洞与输水洞全开，最大下泄80m³/s，启用备用泄洪设施',
+              '提前12小时组织白河峡谷及张山营镇5个险村680人转移',
+              '请求市防指调派武警水电部队进驻坝区抢险',
+              '启动一级（最高级）应急响应，实施24小时不间断监测',
+              '启动国家级应急响应，请求中央支援',
+              '建立延庆区应急指挥部，协调全区力量',
+              '启用备用泄洪通道和应急溢洪道',
+              '组织武警、消防等专业救援力量进驻',
+              '启动直升机空中监测和救援',
+              '建立临时医疗救治点和物资储备中心',
+              '实施交通管制，确保救援通道畅通',
+              '启动卫星通信和应急通信系统',
+              '组织专家团队现场评估大坝安全状况',
+              '启动媒体24小时滚动播报，发布紧急通告',
+              '协调周边水库联合调度，减轻压力',
+              '准备启用下游蓄滞洪区进行分洪'
+            ] : [
+              '泄洪洞与输水洞全开，最大下泄60m³/s',
+              '提前12小时组织白河峡谷及张山营镇5个险村680人转移',
+              '请求市防指调派武警水电部队进驻坝区抢险',
+              '启动一级（最高级）应急响应',
+              '实施24小时不间断监测',
+              '协调下游河道清障和分洪准备',
+              '启动应急广播和预警信号',
+              '建立现场指挥部',
+              '联系医疗救援和后勤保障队伍',
+              '向市委市政府紧急报告'
+            ]
+          },
+          '怀柔水库': {
+            warning: [
+              '加密大坝巡查（2小时一次）',
+              '向下游怀柔区防汛指挥部滚动报送水情',
+              '启动二级应急响应',
+              '视雨情提前6小时开启泄洪闸，控制下泄≤30m³/s',
+              '保证下游河道不超警戒流量',
+              '加强气象监测和预报',
+              '检查泄洪设施运行状态',
+              '通知怀柔区防汛指挥部',
+              '准备应急抢险物资和队伍'
+            ],
+            danger: isOverMax3M ? [
+              '启动特级应急响应（最高级别）',
+              '泄洪闸全开，最大下泄150m³/s，启用备用泄洪设施',
+              '提前24小时组织怀柔区沿河人员转移',
+              '启动一级（最高级）应急响应',
+              '实施24小时不间断监测，协调下游河道清障',
+              '启动国家级应急响应，请求中央支援',
+              '建立怀柔区应急指挥部，协调全区力量',
+              '启用备用泄洪通道和应急溢洪道',
+              '组织武警、消防等专业救援力量进驻',
+              '启动直升机空中监测和救援',
+              '建立临时医疗救治点和物资储备中心',
+              '实施交通管制，确保救援通道畅通',
+              '启动卫星通信和应急通信系统',
+              '组织专家团队现场评估大坝安全状况',
+              '启动媒体24小时滚动播报，发布紧急通告',
+              '协调周边水库联合调度，减轻压力',
+              '准备启用下游蓄滞洪区进行分洪'
+            ] : [
+              '开启全部泄洪闸，最大下泄100m³/s',
+              '提前24小时组织怀柔区沿河人员转移',
+              '启动一级（最高级）应急响应',
+              '实施24小时不间断监测',
+              '协调下游河道清障和分洪准备',
+              '启动应急广播和预警信号',
+              '建立现场指挥部',
+              '联系医疗救援和后勤保障队伍',
+              '向市委市政府紧急报告'
+            ]
+          },
+          '北台上水库': {
+            warning: [
+              '加密大坝巡查（2小时一次）',
+              '向下游怀柔区防汛指挥部滚动报送水情',
+              '启动二级应急响应',
+              '视雨情提前6小时开启泄洪闸，控制下泄≤20m³/s',
+              '保证下游河道不超警戒流量',
+              '加强气象监测和预报',
+              '检查泄洪设施运行状态',
+              '通知怀柔区防汛指挥部',
+              '准备应急抢险物资和队伍'
+            ],
+            danger: isOverMax3M ? [
+              '启动特级应急响应（最高级别）',
+              '泄洪闸全开，最大下泄80m³/s，启用备用泄洪设施',
+              '提前24小时组织怀柔区沿河人员转移',
+              '启动一级（最高级）应急响应',
+              '实施24小时不间断监测，协调下游河道清障',
+              '启动国家级应急响应，请求中央支援',
+              '建立怀柔区应急指挥部，协调全区力量',
+              '启用备用泄洪通道和应急溢洪道',
+              '组织武警、消防等专业救援力量进驻',
+              '启动直升机空中监测和救援',
+              '建立临时医疗救治点和物资储备中心',
+              '实施交通管制，确保救援通道畅通',
+              '启动卫星通信和应急通信系统',
+              '组织专家团队现场评估大坝安全状况',
+              '启动媒体24小时滚动播报，发布紧急通告',
+              '协调周边水库联合调度，减轻压力',
+              '准备启用下游蓄滞洪区进行分洪'
+            ] : [
+              '开启全部泄洪闸，最大下泄60m³/s',
+              '提前24小时组织怀柔区沿河人员转移',
+              '启动一级（最高级）应急响应',
+              '实施24小时不间断监测',
+              '协调下游河道清障和分洪准备',
+              '启动应急广播和预警信号',
+              '建立现场指挥部',
+              '联系医疗救援和后勤保障队伍',
+              '向市委市政府紧急报告'
+            ]
+          },
+          '崇青水库': {
+            warning: [
+              '加密大坝巡查（2小时一次）',
+              '向下游房山区防汛指挥部滚动报送水情',
+              '启动二级应急响应',
+              '视雨情提前6小时开启泄洪闸，控制下泄≤25m³/s',
+              '保证下游河道不超警戒流量',
+              '加强气象监测和预报',
+              '检查泄洪设施运行状态',
+              '通知房山区防汛指挥部',
+              '准备应急抢险物资和队伍'
+            ],
+            danger: isOverMax3M ? [
+              '启动特级应急响应（最高级别）',
+              '泄洪闸全开，最大下泄100m³/s，启用备用泄洪设施',
+              '提前24小时组织房山区沿河人员转移',
+              '启动一级（最高级）应急响应',
+              '实施24小时不间断监测，协调下游河道清障',
+              '启动国家级应急响应，请求中央支援',
+              '建立房山区应急指挥部，协调全区力量',
+              '启用备用泄洪通道和应急溢洪道',
+              '组织武警、消防等专业救援力量进驻',
+              '启动直升机空中监测和救援',
+              '建立临时医疗救治点和物资储备中心',
+              '实施交通管制，确保救援通道畅通',
+              '启动卫星通信和应急通信系统',
+              '组织专家团队现场评估大坝安全状况',
+              '启动媒体24小时滚动播报，发布紧急通告',
+              '协调周边水库联合调度，减轻压力',
+              '准备启用下游蓄滞洪区进行分洪'
+            ] : [
+              '开启全部泄洪闸，最大下泄80m³/s',
+              '提前24小时组织房山区沿河人员转移',
+              '启动一级（最高级）应急响应',
+              '实施24小时不间断监测',
+              '协调下游河道清障和分洪准备',
+              '启动应急广播和预警信号',
+              '建立现场指挥部',
+              '联系医疗救援和后勤保障队伍',
+              '向市委市政府紧急报告'
+            ]
+          },
+          '大宁水库': {
+            warning: [
+              '加密大坝巡查（2小时一次）',
+              '向下游丰台区防汛指挥部滚动报送水情',
+              '启动二级应急响应',
+              '视雨情提前6小时开启泄洪闸，控制下泄≤30m³/s',
+              '保证下游河道不超警戒流量',
+              '加强气象监测和预报',
+              '检查泄洪设施运行状态',
+              '通知丰台区防汛指挥部',
+              '准备应急抢险物资和队伍'
+            ],
+            danger: isOverMax3M ? [
+              '启动特级应急响应（最高级别）',
+              '泄洪闸全开，最大下泄120m³/s，启用备用泄洪设施',
+              '提前24小时组织丰台区沿河人员转移',
+              '启动一级（最高级）应急响应',
+              '实施24小时不间断监测，协调下游河道清障',
+              '启动国家级应急响应，请求中央支援',
+              '建立丰台区应急指挥部，协调全区力量',
+              '启用备用泄洪通道和应急溢洪道',
+              '组织武警、消防等专业救援力量进驻',
+              '启动直升机空中监测和救援',
+              '建立临时医疗救治点和物资储备中心',
+              '实施交通管制，确保救援通道畅通',
+              '启动卫星通信和应急通信系统',
+              '组织专家团队现场评估大坝安全状况',
+              '启动媒体24小时滚动播报，发布紧急通告',
+              '协调周边水库联合调度，减轻压力',
+              '准备启用下游蓄滞洪区进行分洪'
+            ] : [
+              '开启全部泄洪闸，最大下泄100m³/s',
+              '提前24小时组织丰台区沿河人员转移',
+              '启动一级（最高级）应急响应',
+              '实施24小时不间断监测',
+              '协调下游河道清障和分洪准备',
+              '启动应急广播和预警信号',
+              '建立现场指挥部',
+              '联系医疗救援和后勤保障队伍',
+              '向市委市政府紧急报告'
+            ]
+          },
+          '大水峪水库': {
+            warning: [
+              '加密大坝巡查（2小时一次）',
+              '向下游怀柔区防汛指挥部滚动报送水情',
+              '启动二级应急响应',
+              '视雨情提前6小时开启泄洪闸，控制下泄≤25m³/s',
+              '保证下游河道不超警戒流量',
+              '加强气象监测和预报',
+              '检查泄洪设施运行状态',
+              '通知怀柔区防汛指挥部',
+              '准备应急抢险物资和队伍'
+            ],
+            danger: isOverMax3M ? [
+              '启动特级应急响应（最高级别）',
+              '泄洪闸全开，最大下泄100m³/s，启用备用泄洪设施',
+              '提前24小时组织怀柔区沿河人员转移',
+              '启动一级（最高级）应急响应',
+              '实施24小时不间断监测，协调下游河道清障',
+              '启动国家级应急响应，请求中央支援',
+              '建立怀柔区应急指挥部，协调全区力量',
+              '启用备用泄洪通道和应急溢洪道',
+              '组织武警、消防等专业救援力量进驻',
+              '启动直升机空中监测和救援',
+              '建立临时医疗救治点和物资储备中心',
+              '实施交通管制，确保救援通道畅通',
+              '启动卫星通信和应急通信系统',
+              '组织专家团队现场评估大坝安全状况',
+              '启动媒体24小时滚动播报，发布紧急通告',
+              '协调周边水库联合调度，减轻压力',
+              '准备启用下游蓄滞洪区进行分洪'
+            ] : [
+              '开启全部泄洪闸，最大下泄80m³/s',
+              '提前24小时组织怀柔区沿河人员转移',
+              '启动一级（最高级）应急响应',
+              '实施24小时不间断监测',
+              '协调下游河道清障和分洪准备',
+              '启动应急广播和预警信号',
+              '建立现场指挥部',
+              '联系医疗救援和后勤保障队伍',
+              '向市委市政府紧急报告'
+            ]
+          },
+          '黄松峪水库': {
+            warning: [
+              '加密大坝巡查（2小时一次）',
+              '向下游平谷区防汛指挥部滚动报送水情',
+              '启动二级应急响应',
+              '视雨情提前6小时开启泄洪闸，控制下泄≤20m³/s',
+              '保证下游河道不超警戒流量',
+              '加强气象监测和预报',
+              '检查泄洪设施运行状态',
+              '通知平谷区防汛指挥部',
+              '准备应急抢险物资和队伍'
+            ],
+            danger: isOverMax3M ? [
+              '启动特级应急响应（最高级别）',
+              '泄洪闸全开，最大下泄80m³/s，启用备用泄洪设施',
+              '提前24小时组织平谷区沿河人员转移',
+              '启动一级（最高级）应急响应',
+              '实施24小时不间断监测，协调下游河道清障',
+              '启动国家级应急响应，请求中央支援',
+              '建立平谷区应急指挥部，协调全区力量',
+              '启用备用泄洪通道和应急溢洪道',
+              '组织武警、消防等专业救援力量进驻',
+              '启动直升机空中监测和救援',
+              '建立临时医疗救治点和物资储备中心',
+              '实施交通管制，确保救援通道畅通',
+              '启动卫星通信和应急通信系统',
+              '组织专家团队现场评估大坝安全状况',
+              '启动媒体24小时滚动播报，发布紧急通告',
+              '协调周边水库联合调度，减轻压力',
+              '准备启用下游蓄滞洪区进行分洪'
+            ] : [
+              '开启全部泄洪闸，最大下泄60m³/s',
+              '提前24小时组织平谷区沿河人员转移',
+              '启动一级（最高级）应急响应',
+              '实施24小时不间断监测',
+              '协调下游河道清障和分洪准备',
+              '启动应急广播和预警信号',
+              '建立现场指挥部',
+              '联系医疗救援和后勤保障队伍',
+              '向市委市政府紧急报告'
+            ]
+          },
+          '沙厂水库': {
+            warning: [
+              '加密大坝巡查（2小时一次）',
+              '向下游密云区防汛指挥部滚动报送水情',
+              '启动二级应急响应',
+              '视雨情提前6小时开启泄洪闸，控制下泄≤25m³/s',
+              '保证下游河道不超警戒流量',
+              '加强气象监测和预报',
+              '检查泄洪设施运行状态',
+              '通知密云区防汛指挥部',
+              '准备应急抢险物资和队伍'
+            ],
+            danger: isOverMax3M ? [
+              '启动特级应急响应（最高级别）',
+              '泄洪闸全开，最大下泄100m³/s，启用备用泄洪设施',
+              '提前24小时组织密云区沿河人员转移',
+              '启动一级（最高级）应急响应',
+              '实施24小时不间断监测，协调下游河道清障',
+              '启动国家级应急响应，请求中央支援',
+              '建立密云区应急指挥部，协调全区力量',
+              '启用备用泄洪通道和应急溢洪道',
+              '组织武警、消防等专业救援力量进驻',
+              '启动直升机空中监测和救援',
+              '建立临时医疗救治点和物资储备中心',
+              '实施交通管制，确保救援通道畅通',
+              '启动卫星通信和应急通信系统',
+              '组织专家团队现场评估大坝安全状况',
+              '启动媒体24小时滚动播报，发布紧急通告',
+              '协调周边水库联合调度，减轻压力',
+              '准备启用下游蓄滞洪区进行分洪'
+            ] : [
+              '开启全部泄洪闸，最大下泄80m³/s',
+              '提前24小时组织密云区沿河人员转移',
+              '启动一级（最高级）应急响应',
+              '实施24小时不间断监测',
+              '协调下游河道清障和分洪准备',
+              '启动应急广播和预警信号',
+              '建立现场指挥部',
+              '联系医疗救援和后勤保障队伍',
+              '向市委市政府紧急报告'
+            ]
+          },
+          '桃峪口水库': {
+            warning: [
+              '加密大坝巡查（2小时一次）',
+              '向下游昌平区防汛指挥部滚动报送水情',
+              '启动二级应急响应',
+              '视雨情提前6小时开启泄洪闸，控制下泄≤20m³/s',
+              '保证下游河道不超警戒流量',
+              '加强气象监测和预报',
+              '检查泄洪设施运行状态',
+              '通知昌平区防汛指挥部',
+              '准备应急抢险物资和队伍'
+            ],
+            danger: isOverMax3M ? [
+              '泄洪闸全开，最大下泄80m³/s',
+              '提前24小时组织昌平区沿河人员转移',
+              '启动一级（最高级）应急响应',
+              '实施24小时不间断监测，协调下游河道清障'
+            ] : [
+              '开启全部泄洪闸，最大下泄60m³/s',
+              '提前24小时组织昌平区沿河人员转移',
+              '启动一级（最高级）应急响应',
+              '实施24小时不间断监测',
+              '协调下游河道清障和分洪准备',
+              '启动应急广播和预警信号',
+              '建立现场指挥部',
+              '联系医疗救援和后勤保障队伍',
+              '向市委市政府紧急报告'
+            ]
+          },
+          '西峪水库': {
+            warning: [
+              '加密大坝巡查（2小时一次）',
+              '向下游平谷区防汛指挥部滚动报送水情',
+              '启动二级应急响应',
+              '视雨情提前6小时开启泄洪闸，控制下泄≤20m³/s',
+              '保证下游河道不超警戒流量',
+              '加强气象监测和预报',
+              '检查泄洪设施运行状态',
+              '通知平谷区防汛指挥部',
+              '准备应急抢险物资和队伍'
+            ],
+            danger: isOverMax3M ? [
+              '启动特级应急响应（最高级别）',
+              '泄洪闸全开，最大下泄80m³/s，启用备用泄洪设施',
+              '提前24小时组织平谷区沿河人员转移',
+              '启动一级（最高级）应急响应',
+              '实施24小时不间断监测，协调下游河道清障',
+              '启动国家级应急响应，请求中央支援',
+              '建立平谷区应急指挥部，协调全区力量',
+              '启用备用泄洪通道和应急溢洪道',
+              '组织武警、消防等专业救援力量进驻',
+              '启动直升机空中监测和救援',
+              '建立临时医疗救治点和物资储备中心',
+              '实施交通管制，确保救援通道畅通',
+              '启动卫星通信和应急通信系统',
+              '组织专家团队现场评估大坝安全状况',
+              '启动媒体24小时滚动播报，发布紧急通告',
+              '协调周边水库联合调度，减轻压力',
+              '准备启用下游蓄滞洪区进行分洪'
+            ] : [
+              '开启全部泄洪闸，最大下泄60m³/s',
+              '提前24小时组织平谷区沿河人员转移',
+              '启动一级（最高级）应急响应',
+              '实施24小时不间断监测',
+              '协调下游河道清障和分洪准备',
+              '启动应急广播和预警信号',
+              '建立现场指挥部',
+              '联系医疗救援和后勤保障队伍',
+              '向市委市政府紧急报告'
+            ]
+          },
+          '遥桥峪水库': {
+            warning: [
+              '加密大坝巡查（2小时一次）',
+              '向下游密云区防汛指挥部滚动报送水情',
+              '启动二级应急响应',
+              '视雨情提前6小时开启泄洪闸，控制下泄≤20m³/s',
+              '保证下游河道不超警戒流量',
+              '加强气象监测和预报',
+              '检查泄洪设施运行状态',
+              '通知密云区防汛指挥部',
+              '准备应急抢险物资和队伍'
+            ],
+            danger: isOverMax3M ? [
+              '泄洪闸全开，最大下泄80m³/s',
+              '提前24小时组织密云区沿河人员转移',
+              '启动一级（最高级）应急响应',
+              '实施24小时不间断监测，协调下游河道清障'
+            ] : [
+              '开启全部泄洪闸，最大下泄60m³/s',
+              '提前24小时组织密云区沿河人员转移',
+              '启动一级（最高级）应急响应',
+              '实施24小时不间断监测',
+              '协调下游河道清障和分洪准备',
+              '启动应急广播和预警信号',
+              '建立现场指挥部',
+              '联系医疗救援和后勤保障队伍',
+              '向市委市政府紧急报告'
+            ]
+          },
+          '斋堂水库': {
+            warning: [
+              '加密大坝巡查（2小时一次）',
+              '向下游门头沟区防汛指挥部滚动报送水情',
+              '启动二级应急响应',
+              '视雨情提前6小时开启泄洪闸，控制下泄≤20m³/s',
+              '保证下游河道不超警戒流量',
+              '加强气象监测和预报',
+              '检查泄洪设施运行状态',
+              '通知门头沟区防汛指挥部',
+              '准备应急抢险物资和队伍'
+            ],
+            danger: isOverMax3M ? [
+              '泄洪闸全开，最大下泄80m³/s',
+              '提前24小时组织门头沟区沿河人员转移',
+              '启动一级（最高级）应急响应',
+              '实施24小时不间断监测，协调下游河道清障'
+            ] : [
+              '开启全部泄洪闸，最大下泄60m³/s',
+              '提前24小时组织门头沟区沿河人员转移',
+              '启动一级（最高级）应急响应',
+              '实施24小时不间断监测',
+              '协调下游河道清障和分洪准备',
+              '启动应急广播和预警信号',
+              '建立现场指挥部',
+              '联系医疗救援和后勤保障队伍',
+              '向市委市政府紧急报告'
+            ]
+          },
+          '珠窝水库': {
+            warning: [
+              '加密大坝巡查（2小时一次）',
+              '向下游门头沟区防汛指挥部滚动报送水情',
+              '启动二级应急响应',
+              '视雨情提前6小时开启泄洪闸，控制下泄≤20m³/s',
+              '保证下游河道不超警戒流量',
+              '加强气象监测和预报',
+              '检查泄洪设施运行状态',
+              '通知门头沟区防汛指挥部',
+              '准备应急抢险物资和队伍'
+            ],
+            danger: isOverMax3M ? [
+              '泄洪闸全开，最大下泄80m³/s',
+              '提前24小时组织门头沟区沿河人员转移',
+              '启动一级（最高级）应急响应',
+              '实施24小时不间断监测，协调下游河道清障'
+            ] : [
+              '开启全部泄洪闸，最大下泄60m³/s',
+              '提前24小时组织门头沟区沿河人员转移',
+              '启动一级（最高级）应急响应',
+              '实施24小时不间断监测',
+              '协调下游河道清障和分洪准备',
+              '启动应急广播和预警信号',
+              '建立现场指挥部',
+              '联系医疗救援和后勤保障队伍',
+              '向市委市政府紧急报告'
+            ]
           }
         };
         
@@ -1390,10 +2040,10 @@ export default {
       
       if (planType === 'warning') {
         planTitle = `${reservoirName} - 警戒水位应急预案`;
-        planMeasures = getReservoirPlans(reservoirName, 'warning');
+        planMeasures = getReservoirPlans(reservoirName, 'warning', currentLevel, maxLevel);
       } else if (planType === 'danger') {
         planTitle = `${reservoirName} - 危险水位应急预案`;
-        planMeasures = getReservoirPlans(reservoirName, 'danger');
+        planMeasures = getReservoirPlans(reservoirName, 'danger', currentLevel, maxLevel);
       }
       
       // 如果没有找到对应水库的预案，使用通用预案
@@ -1436,8 +2086,8 @@ export default {
       
       showPlanModal.value = true;
       
-      // 设置初始位置，避免与分析窗口重叠
-      nextTick(() => {
+      // 使用 requestAnimationFrame 优化位置设置，减少卡顿
+      requestAnimationFrame(() => {
         if (planModalRef.value) {
           const rightOffset = showAnalysisModal.value ? 250 : 0;
           planModalRef.value.style.transform = `translate(${rightOffset}px, 0)`;
@@ -2399,19 +3049,28 @@ export default {
   min-width: 320px;
   max-width: 400px;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  padding: 20px;
 }
 
 .popup-header {
   border-bottom: 2px solid #1976d2;
-  padding-bottom: 8px;
-  margin-bottom: 12px;
+  padding-bottom: 12px;
+  margin-bottom: 16px;
+  text-align: center;
 }
 
 .popup-header h4 {
   margin: 0;
   color: #1976d2;
-  font-size: 16px;
-  font-weight: 600;
+  font-size: 18px;
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  letter-spacing: 0.5px;
 }
 
 .popup-section {
@@ -2427,35 +3086,243 @@ export default {
 
 .info-grid {
   display: grid;
-  gap: 6px;
+  gap: 8px;
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 12px;
+  border: 1px solid #e9ecef;
 }
 
 .info-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 4px 0;
-  border-bottom: 1px solid #f0f0f0;
+  padding: 8px 12px;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #f0f0f0;
+  transition: all 0.2s ease;
 }
 
-.info-item:last-child {
-  border-bottom: none;
+.info-item:hover {
+  border-color: #1976d2;
+  box-shadow: 0 2px 8px rgba(25, 118, 210, 0.1);
+  transform: translateY(-1px);
 }
 
 .info-item .label {
-  font-size: 12px;
-  color: #666;
+  font-size: 13px;
+  color: #555;
   flex: 1;
+  font-weight: 500;
 }
 
 .info-item .value {
-  font-size: 12px;
-  color: #333;
-  font-weight: 500;
+  font-size: 13px;
+  color: #1976d2;
+  font-weight: 600;
   flex: 1;
   text-align: right;
 }
 
+/* 现代化预警分析输入样式 */
+.warning-input-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.input-group {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: #f8f9fa;
+  border: 2px solid #e9ecef;
+  border-radius: 12px;
+  padding: 4px;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  flex-direction: row; /* 确保水平排列 */
+}
+
+.input-group:focus-within {
+  border-color: #1976d2;
+  background: white;
+  box-shadow: 0 4px 16px rgba(25, 118, 210, 0.15);
+  transform: translateY(-1px);
+}
+
+/* 移除图标样式 */
+
+.modern-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 8px 12px;
+  font-size: 14px;
+  color: #333;
+  outline: none;
+  font-weight: 500;
+  height: 32px; /* 确保与单位标签高度一致 */
+  box-sizing: border-box;
+  display: inline-block; /* 确保内联显示 */
+}
+
+.modern-input::placeholder {
+  color: #999;
+  font-weight: 400;
+}
+
+.input-unit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 32px;
+  margin-right: 8px;
+  background: rgba(25, 118, 210, 0.1);
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #1976d2;
+  flex-shrink: 0;
+  align-self: center; /* 确保与输入框垂直居中对齐 */
+  display: inline-block; /* 确保内联显示 */
+}
+
+.modern-warning-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: linear-gradient(135deg, #1976d2, #2196F3);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(25, 118, 210, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.modern-warning-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+.modern-warning-btn:hover::before {
+  left: 100%;
+}
+
+.modern-warning-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(25, 118, 210, 0.4);
+  background: linear-gradient(135deg, #1565c0, #1976d2);
+}
+
+.modern-warning-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(25, 118, 210, 0.3);
+}
+
+.modern-warning-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.modern-warning-btn:disabled::before {
+  display: none;
+}
+
+.btn-icon {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.btn-text {
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+/* 加载进度条样式 */
+.loading-progress {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 2px;
+  overflow: hidden;
+  position: relative;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #4CAF50, #8BC34A);
+  border-radius: 2px;
+  width: 0%;
+  animation: progressAnimation 1s ease-in-out forwards;
+}
+
+@keyframes progressAnimation {
+  0% {
+    width: 0%;
+  }
+  100% {
+    width: 100%;
+  }
+}
+
+.loading-text {
+  font-size: 12px;
+  color: white;
+  font-weight: 500;
+}
+
+/* 弹窗标题样式 */
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+.section-icon {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.section-header h5 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1976d2;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* 保留原有样式作为备用 */
 .warning-input {
   display: flex;
   gap: 8px;
@@ -2700,22 +3567,22 @@ export default {
 }
 
 .emergency-plan-btn.warning-plan {
-  background: linear-gradient(135deg, #ff9800, #ffb74d);
+  background: #ff9800; /* 简化渐变，减少计算 */
   color: white;
 }
 
 .emergency-plan-btn.warning-plan:hover {
-  background: linear-gradient(135deg, #f57c00, #ff9800);
+  background: #f57c00; /* 简化渐变，减少计算 */
 }
 
 .emergency-plan-btn.danger-plan {
-  background: linear-gradient(135deg, #f44336, #ef5350);
+  background: #f44336; /* 简化渐变，减少计算 */
   color: white;
-  animation: dangerPulse 2s infinite;
+  /* 移除动画，减少卡顿 */
 }
 
 .emergency-plan-btn.danger-plan:hover {
-  background: linear-gradient(135deg, #d32f2f, #f44336);
+  background: #d32f2f; /* 简化渐变，减少计算 */
 }
 
 @keyframes dangerPulse {
@@ -2764,11 +3631,11 @@ export default {
 }
 
 .plan-status-indicator.status-warning {
-  background: linear-gradient(135deg, #ff9800, #ffb74d);
+  background: #ff9800; /* 简化渐变，减少计算 */
 }
 
 .plan-status-indicator.status-danger {
-  background: linear-gradient(135deg, #f44336, #ef5350);
+  background: #f44336; /* 简化渐变，减少计算 */
 }
 
 .current-level-info {
@@ -2895,12 +3762,16 @@ export default {
   align-items: center;
   z-index: 10000;
   pointer-events: none;
-  animation: fadeIn 0.3s ease;
+  /* 移除动画，减少卡顿 */
+  opacity: 1;
 }
 
 /* 预案模态框特殊定位 */
 .analysis-modal.plan-modal {
   z-index: 10001;
+  /* 添加硬件加速，减少卡顿 */
+  transform: translateZ(0);
+  will-change: transform;
 }
 
 .analysis-modal-content {
@@ -2911,11 +3782,14 @@ export default {
   max-height: 70vh;
   overflow-y: auto;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
-  animation: slideIn 0.3s ease;
+  /* 移除动画，减少卡顿 */
   position: relative;
   cursor: move;
   pointer-events: auto;
   border: 2px solid rgba(25, 118, 210, 0.2);
+  /* 添加硬件加速 */
+  transform: translateZ(0);
+  will-change: transform;
 }
 
 .analysis-modal-header {
@@ -2924,12 +3798,14 @@ export default {
   align-items: center;
   padding: 16px 20px;
   border-bottom: 1px solid #eee;
-  background: linear-gradient(135deg, #1976d2, #2196F3);
+  background: #1976d2; /* 简化渐变，减少计算 */
   color: white;
   border-radius: 8px 8px 0 0;
   cursor: move;
   user-select: none;
   position: relative;
+  /* 添加硬件加速 */
+  transform: translateZ(0);
 }
 
 .analysis-modal-header h3 {
@@ -2970,6 +3846,9 @@ export default {
 
 .analysis-modal-body {
   padding: 16px 20px;
+  /* 添加性能优化 */
+  contain: layout style;
+  will-change: auto;
 }
 
 .close-btn {
@@ -3164,21 +4043,7 @@ export default {
   background: #1565c0;
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes slideIn {
-  from { 
-    opacity: 0;
-    transform: translateY(-20px);
-  }
-  to { 
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
+/* 移除动画关键帧，减少CSS计算 */
 
 /* 子菜单样式 */
 .submenu {
