@@ -27,41 +27,55 @@
         <el-form-item label="水库名称">
           <el-input v-model="searchForm.reservoirName" placeholder="请输入水库名称" clearable @keyup.enter="handleSearch" @clear="handleSearch" />
         </el-form-item>
-        <el-form-item label="查询字段">
+        
+        <!-- 动态筛选字段 -->
+        <template v-for="field in activeFilterFields" :key="field.value">
+          <el-form-item :label="field.label">
+            <el-input-number 
+              v-model="searchForm[field.value + 'Min']" 
+              :placeholder="'最小值'" 
+              :min="field.min"
+              :max="field.max"
+              :step="field.step"
+              style="width: 120px;"
+              clearable
+              @clear="checkAndRemoveField(field.value)"
+            />
+            <span style="margin: 0 8px;">-</span>
+            <el-input-number 
+              v-model="searchForm[field.value + 'Max']" 
+              :placeholder="'最大值'" 
+              :min="field.min"
+              :max="field.max"
+              :step="field.step"
+              style="width: 120px;"
+              clearable
+              @clear="checkAndRemoveField(field.value)"
+            />
+            <span style="margin-left: 8px; color: #909399; font-size: 12px;">({{ field.unit }})</span>
+            <el-button 
+              type="text" 
+              size="small" 
+              style="margin-left: 8px;"
+              @click="removeFilterField(field.value)"
+            >
+              <el-icon><Close /></el-icon>
+            </el-button>
+          </el-form-item>
+        </template>
+        
+        <!-- 添加筛选字段下拉框 -->
+        <el-form-item label="添加筛选">
           <el-select v-model="selectedField" placeholder="请选择查询字段" @change="handleFieldChange" clearable>
-            <el-option label="年份" value="year" />
-            <el-option label="月份" value="month" />
-            <el-option label="氧气" value="oxygen" />
-            <el-option label="高锰酸盐" value="potassiumPermanganate" />
-            <el-option label="化学需氧量" value="cod" />
-            <el-option label="流量" value="flow" />
-            <el-option label="水深" value="waterDepth" />
-            <el-option label="总氮" value="totalNitrogen" />
-            <el-option label="总磷" value="totalPhosphorus" />
+            <el-option 
+              v-for="field in availableFilterFields" 
+              :key="field.value" 
+              :label="field.label" 
+              :value="field.value" 
+            />
           </el-select>
         </el-form-item>
-        <el-form-item v-if="selectedField" :label="getFieldLabel(selectedField)">
-          <el-input-number 
-            v-model="searchForm[selectedField + 'Min']" 
-            :placeholder="'最小值'" 
-            :min="getFieldMin(selectedField)"
-            :max="getFieldMax(selectedField)"
-            :step="getFieldStep(selectedField)"
-            style="width: 120px;"
-            clearable
-          />
-          <span style="margin: 0 8px;">-</span>
-          <el-input-number 
-            v-model="searchForm[selectedField + 'Max']" 
-            :placeholder="'最大值'" 
-            :min="getFieldMin(selectedField)"
-            :max="getFieldMax(selectedField)"
-            :step="getFieldStep(selectedField)"
-            style="width: 120px;"
-            clearable
-          />
-          <span style="margin-left: 8px; color: #909399; font-size: 12px;">({{ getFieldUnit(selectedField) }})</span>
-        </el-form-item>
+        
         <el-form-item>
           <el-button type="primary" @click="handleSearch">查询</el-button>
           <el-button @click="resetSearch">重置</el-button>
@@ -72,17 +86,17 @@
     <!-- 数据表格 -->
     <div class="table-container">
       <el-table :data="tableData" v-loading="loading" border style="width: 100%">
-        <el-table-column prop="monitorPointName" label="监测点名称" width="150" />
-        <el-table-column prop="reservoirName" label="水库名称" width="120" />
-        <el-table-column prop="year" label="年份" width="80" />
-        <el-table-column prop="month" label="月份" width="80" />
-        <el-table-column prop="oxygen" label="溶解氧(mg/L)" width="120" />
-        <el-table-column prop="potassiumPermanganate" label="高锰酸盐指数(mg/L)" width="150" />
-        <el-table-column prop="cod" label="化学需氧量(mg/L)" width="140" />
-        <el-table-column prop="flow" label="流量(m³/s)" width="120" />
-        <el-table-column prop="waterDepth" label="水深(m)" width="100" />
-        <el-table-column prop="totalNitrogen" label="总氮(mg/L)" width="120" />
-        <el-table-column prop="totalPhosphorus" label="总磷(mg/L)" width="120" />
+        <el-table-column prop="monitorPointName" label="监测点名称" />
+        <el-table-column prop="reservoirName" label="水库名称" />
+        <el-table-column prop="year" label="年份" />
+        <el-table-column prop="month" label="月份" />
+        <el-table-column prop="oxygen" label="溶解氧(mg/L)" />
+        <el-table-column prop="potassiumPermanganate" label="高锰酸盐指数(mg/L)" />
+        <el-table-column prop="cod" label="化学需氧量(mg/L)" />
+        <el-table-column prop="flow" label="流量(m³/s)" />
+        <el-table-column prop="waterDepth" label="水深(m)" />
+        <el-table-column prop="totalNitrogen" label="总氮(mg/L)" />
+        <el-table-column prop="totalPhosphorus" label="总磷(mg/L)" />
         <el-table-column label="操作" width="150" fixed="right">
           <template #default="scope">
             <el-button size="small" @click="handleEdit(scope.row)">编辑</el-button>
@@ -219,9 +233,9 @@
  </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Upload, Download, Plus, UploadFilled } from '@element-plus/icons-vue'
+import { Upload, Download, Plus, UploadFilled, Close } from '@element-plus/icons-vue'
 import axios from 'axios'
 
 // 响应式数据
@@ -293,6 +307,22 @@ const searchForm = reactive({
   totalPhosphorusMax: null
 })
 
+// 可用的筛选字段
+const availableFilterFields = reactive([
+  { label: '年份', value: 'year', min: 1900, max: 2100, step: 1, unit: '年' },
+  { label: '月份', value: 'month', min: 1, max: 12, step: 1, unit: '月' },
+  { label: '溶解氧', value: 'oxygen', min: 0, max: 100, step: 0.1, unit: 'mg/l' },
+  { label: '高锰酸盐', value: 'potassiumPermanganate', min: 0, max: 100, step: 0.1, unit: 'mg/l' },
+  { label: '化学需氧量', value: 'cod', min: 0, max: 100, step: 0.1, unit: 'mg/l' },
+  { label: '流量', value: 'flow', min: 0, max: 1000, step: 0.1, unit: 'm³/s' },
+  { label: '水深', value: 'waterDepth', min: 0, max: 10, step: 0.1, unit: 'm' },
+  { label: '总氮', value: 'totalNitrogen', min: 0, max: 100, step: 0.1, unit: 'mg/l' },
+  { label: '总磷', value: 'totalPhosphorus', min: 0, max: 10, step: 0.1, unit: 'mg/l' }
+])
+
+// 当前激活的筛选字段
+const activeFilterFields = ref([])
+
 // 方法
 const fetchList = async () => {
   loading.value = true
@@ -302,24 +332,7 @@ const fetchList = async () => {
       pageSize: pageSize.value,
       monitorPointName: searchForm.monitorPointName,
       reservoirName: searchForm.reservoirName,
-      yearMin: searchForm.yearMin,
-      yearMax: searchForm.yearMax,
-      monthMin: searchForm.monthMin,
-      monthMax: searchForm.monthMax,
-      oxygenMin: searchForm.oxygenMin,
-      oxygenMax: searchForm.oxygenMax,
-      potassiumPermanganateMin: searchForm.potassiumPermanganateMin,
-      potassiumPermanganateMax: searchForm.potassiumPermanganateMax,
-      codMin: searchForm.codMin,
-      codMax: searchForm.codMax,
-      flowMin: searchForm.flowMin,
-      flowMax: searchForm.flowMax,
-      waterDepthMin: searchForm.waterDepthMin,
-      waterDepthMax: searchForm.waterDepthMax,
-      totalNitrogenMin: searchForm.totalNitrogenMin,
-      totalNitrogenMax: searchForm.totalNitrogenMax,
-      totalPhosphorusMin: searchForm.totalPhosphorusMin,
-      totalPhosphorusMax: searchForm.totalPhosphorusMax
+      ...searchForm // 将所有搜索参数传递给后端
     }
     const response = await axios.get('http://localhost:8080/api/sectionMonitor/list', { params })
     tableData.value = response.data.list
@@ -347,137 +360,19 @@ const resetSearch = () => {
   Object.keys(searchForm).forEach(key => {
     searchForm[key] = key === 'monitorPointName' || key === 'reservoirName' ? '' : null
   })
+  activeFilterFields.value = [] // 重置激活的筛选字段
   selectedField.value = ''
   currentPage.value = 1
   fetchList()
 }
 
 const handleFieldChange = (value) => {
-  selectedField.value = value
-}
-
-const getFieldLabel = (field) => {
-  switch (field) {
-    case 'year':
-      return '年份'
-    case 'month':
-      return '月份'
-    case 'oxygen':
-      return '氧气'
-    case 'potassiumPermanganate':
-      return '高锰酸盐'
-    case 'cod':
-      return '化学需氧量'
-    case 'flow':
-      return '流量'
-    case 'waterDepth':
-      return '水深'
-    case 'totalNitrogen':
-      return '总氮'
-    case 'totalPhosphorus':
-      return '总磷'
-    default:
-      return ''
-  }
-}
-
-const getFieldMin = (field) => {
-  switch (field) {
-    case 'year':
-      return 1900
-    case 'month':
-      return 1
-    case 'oxygen':
-      return 0
-    case 'potassiumPermanganate':
-      return 0
-    case 'cod':
-      return 0
-    case 'flow':
-      return 0
-    case 'waterDepth':
-      return 0
-    case 'totalNitrogen':
-      return 0
-    case 'totalPhosphorus':
-      return 0
-    default:
-      return 0
-  }
-}
-
-const getFieldMax = (field) => {
-  switch (field) {
-    case 'year':
-      return 2100
-    case 'month':
-      return 12
-    case 'oxygen':
-      return 100
-    case 'potassiumPermanganate':
-      return 100
-    case 'cod':
-      return 100
-    case 'flow':
-      return 1000
-    case 'waterDepth':
-      return 10
-    case 'totalNitrogen':
-      return 100
-    case 'totalPhosphorus':
-      return 10
-    default:
-      return 100
-  }
-}
-
-const getFieldStep = (field) => {
-  switch (field) {
-    case 'year':
-      return 1
-    case 'month':
-      return 1
-    case 'oxygen':
-      return 0.1
-    case 'potassiumPermanganate':
-      return 0.1
-    case 'cod':
-      return 0.1
-    case 'flow':
-      return 0.1
-    case 'waterDepth':
-      return 0.1
-    case 'totalNitrogen':
-      return 0.1
-    case 'totalPhosphorus':
-      return 0.1
-    default:
-      return 1
-  }
-}
-
-const getFieldUnit = (field) => {
-  switch (field) {
-    case 'year':
-      return '年'
-    case 'month':
-      return '月'
-    case 'oxygen':
-      return 'mg/l'
-    case 'potassiumPermanganate':
-      return 'mg/l'
-    case 'cod':
-      return 'mg/l'
-    case 'flow':
-      return 'm³/s'
-    case 'waterDepth':
-      return 'm'
-    case 'totalNitrogen':
-      return 'mg/l'
-    case 'totalPhosphorus':
-      return 'mg/l'
-    default:
-      return ''
+  if (value && !activeFilterFields.value.some(field => field.value === value)) {
+    const newField = availableFilterFields.find(field => field.value === value)
+    if (newField) {
+      activeFilterFields.value.push(newField)
+      selectedField.value = '' // 清空下拉框
+    }
   }
 }
 
@@ -627,24 +522,7 @@ const handleExport = async () => {
     const response = await axios.post('http://localhost:8080/api/sectionMonitor/export', {
       monitorPointName: searchForm.monitorPointName,
       reservoirName: searchForm.reservoirName,
-      yearMin: searchForm.yearMin,
-      yearMax: searchForm.yearMax,
-      monthMin: searchForm.monthMin,
-      monthMax: searchForm.monthMax,
-      oxygenMin: searchForm.oxygenMin,
-      oxygenMax: searchForm.oxygenMax,
-      potassiumPermanganateMin: searchForm.potassiumPermanganateMin,
-      potassiumPermanganateMax: searchForm.potassiumPermanganateMax,
-      codMin: searchForm.codMin,
-      codMax: searchForm.codMax,
-      flowMin: searchForm.flowMin,
-      flowMax: searchForm.flowMax,
-      waterDepthMin: searchForm.waterDepthMin,
-      waterDepthMax: searchForm.waterDepthMax,
-      totalNitrogenMin: searchForm.totalNitrogenMin,
-      totalNitrogenMax: searchForm.totalNitrogenMax,
-      totalPhosphorusMin: searchForm.totalPhosphorusMin,
-      totalPhosphorusMax: searchForm.totalPhosphorusMax
+      ...searchForm // 将所有搜索参数传递给后端
     }, {
       responseType: 'blob'
     })
@@ -687,10 +565,54 @@ const handleDelete = async (row) => {
   }
 }
 
+// 添加新的筛选字段
+const addFilterField = () => {
+  if (selectedField.value && !activeFilterFields.value.some(f => f.value === selectedField.value)) {
+    const field = availableFilterFields.find(f => f.value === selectedField.value)
+    if (field) {
+      activeFilterFields.value.push({
+        label: field.label,
+        value: field.value,
+        min: field.min,
+        max: field.max,
+        step: field.step,
+        unit: field.unit
+      })
+      selectedField.value = '' // 清空下拉框
+    }
+  }
+}
+
+// 移除筛选字段
+const removeFilterField = (fieldValue) => {
+  activeFilterFields.value = activeFilterFields.value.filter(f => f.value !== fieldValue)
+  // Clear the values in searchForm when the field is removed
+  searchForm[fieldValue + 'Min'] = null
+  searchForm[fieldValue + 'Max'] = null
+}
+
+// 检查并移除字段
+const checkAndRemoveField = (fieldValue) => {
+  if (searchForm[fieldValue + 'Min'] === null && searchForm[fieldValue + 'Max'] === null) {
+    removeFilterField(fieldValue)
+  }
+}
+
 // 生命周期
 onMounted(() => {
   fetchList()
 })
+
+// 监听搜索表单变化，自动移除无值的筛选字段
+watch(searchForm, (newVal) => {
+  activeFilterFields.value.forEach(field => {
+    const minValue = newVal[field.value + 'Min']
+    const maxValue = newVal[field.value + 'Max']
+    if (minValue === null && maxValue === null) {
+      removeFilterField(field.value)
+    }
+  })
+}, { deep: true })
 </script>
 
 <style scoped>
@@ -755,4 +677,93 @@ onMounted(() => {
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
+
+/* 表格容器 */
+.table-container {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  overflow: hidden;
+}
+
+/* 表格标头美化 */
+:deep(.el-table) {
+  border-radius: 8px;
+  overflow: hidden;
+  width: 100% !important;
+}
+
+:deep(.el-table__header) {
+  background: #f5f7fa;
+}
+
+:deep(.el-table__header th) {
+  background: #f5f7fa !important;
+  color: #606266 !important;
+  font-weight: 700 !important;
+  font-size: 13px !important;
+  padding: 12px 8px !important;
+  border-bottom: 1px solid #ebeef5 !important;
+  text-align: center !important;
+  white-space: nowrap !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  min-width: 80px !important;
+  max-width: none !important;
+  width: auto !important;
+  box-sizing: border-box !important;
+}
+
+:deep(.el-table__header th:hover) {
+  background: #e4e7ed !important;
+}
+
+:deep(.el-table__body td) {
+  padding: 10px 8px !important;
+  text-align: center !important;
+  border-bottom: 1px solid #ebeef5 !important;
+  white-space: nowrap !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  width: auto !important;
+  box-sizing: border-box !important;
+}
+
+:deep(.el-table__body tr:hover > td) {
+  background-color: #f5f7fa !important;
+}
+
+:deep(.el-table__body tr:nth-child(even)) {
+  background-color: #fafafa;
+}
+
+/* 操作列样式 */
+:deep(.el-table__body td:last-child) {
+  text-align: center !important;
+}
+
+:deep(.el-table__body td:last-child .el-button) {
+  margin: 0 4px;
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
+/* 强制表格列自适应 */
+:deep(.el-table__body-wrapper) {
+  overflow-x: auto !important;
+}
+
+:deep(.el-table__header-wrapper) {
+  overflow: visible !important;
+}
+
+/* 确保列内容不被截断 */
+:deep(.el-table .cell) {
+  white-space: nowrap !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+}
+
+/* 启用列宽调整的视觉提示 */
+/* 移除自定义光标，使用 Element Plus 默认的列边缘光标 */
 </style> 

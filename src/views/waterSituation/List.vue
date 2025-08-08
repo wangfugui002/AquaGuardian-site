@@ -35,37 +35,53 @@
             @change="handleSearch"
           />
         </el-form-item>
-        <el-form-item label="查询字段">
+        
+        <!-- 动态筛选字段 -->
+        <template v-for="field in activeFilterFields" :key="field.value">
+          <el-form-item :label="field.label">
+            <el-input-number 
+              v-model="searchForm[field.value + 'Min']" 
+              :placeholder="'最小值'" 
+              :min="0" 
+              :step="field.step"
+              style="width: 120px;"
+              clearable
+              @clear="checkAndRemoveField(field.value)"
+            />
+            <span style="margin: 0 8px;">-</span>
+            <el-input-number 
+              v-model="searchForm[field.value + 'Max']" 
+              :placeholder="'最大值'" 
+              :min="0" 
+              :step="field.step"
+              style="width: 120px;"
+              clearable
+              @clear="checkAndRemoveField(field.value)"
+            />
+            <span style="margin-left: 8px; color: #909399; font-size: 12px;">({{ field.unit }})</span>
+            <el-button 
+              type="text" 
+              size="small" 
+              style="margin-left: 8px;"
+              @click="removeFilterField(field.value)"
+            >
+              <el-icon><Close /></el-icon>
+            </el-button>
+          </el-form-item>
+        </template>
+        
+        <!-- 添加筛选字段下拉框 -->
+        <el-form-item label="添加筛选">
           <el-select v-model="selectedField" placeholder="请选择查询字段" @change="handleFieldChange" clearable>
-            <el-option label="库水位" value="waterLevel" />
-            <el-option label="蓄水量" value="storage" />
-            <el-option label="日平均入库流量" value="avgInflow" />
-            <el-option label="日平均出库流量" value="avgOutflow" />
-            <el-option label="比去年同期增减" value="yoyIncrease" />
-            <el-option label="总库容" value="totalCapacity" />
-            <el-option label="汛限水位" value="floodLevel" />
+            <el-option 
+              v-for="field in availableFilterFields" 
+              :key="field.value" 
+              :label="field.label" 
+              :value="field.value" 
+            />
           </el-select>
         </el-form-item>
-        <el-form-item v-if="selectedField" :label="getFieldLabel(selectedField)">
-          <el-input-number 
-            v-model="searchForm[selectedField + 'Min']" 
-            :placeholder="'最小值'" 
-            :min="0" 
-            :step="getFieldStep(selectedField)"
-            style="width: 120px;"
-            clearable
-          />
-          <span style="margin: 0 8px;">-</span>
-          <el-input-number 
-            v-model="searchForm[selectedField + 'Max']" 
-            :placeholder="'最大值'" 
-            :min="0" 
-            :step="getFieldStep(selectedField)"
-            style="width: 120px;"
-            clearable
-          />
-          <span style="margin-left: 8px; color: #909399; font-size: 12px;">({{ getFieldUnit(selectedField) }})</span>
-        </el-form-item>
+        
         <el-form-item>
           <el-button type="primary" @click="handleSearch">查询</el-button>
           <el-button @click="resetSearch">重置</el-button>
@@ -76,15 +92,15 @@
     <!-- 数据表格 -->
     <div class="table-container">
       <el-table :data="tableData" v-loading="loading" border style="width: 100%">
-        <el-table-column prop="reservoirName" label="库名" width="120" />
-        <el-table-column prop="date" label="日期" width="120" />
-        <el-table-column prop="waterLevel" label="库水位(米)" width="120" />
-        <el-table-column prop="storage" label="蓄水量(万立方米)" width="140" />
-        <el-table-column prop="avgInflow" label="日平均入库流量(立方米/秒)" width="180" />
-        <el-table-column prop="avgOutflow" label="日平均出库流量(立方米/秒)" width="180" />
-        <el-table-column prop="yoyIncrease" label="比去年同期增减(万立方米)" width="180" />
-        <el-table-column prop="totalCapacity" label="总库容(万立方米)" width="140" />
-        <el-table-column prop="floodLevel" label="汛限水位(米)" width="120" />
+        <el-table-column prop="reservoirName" label="库名" />
+        <el-table-column prop="date" label="日期" />
+        <el-table-column prop="waterLevel" label="库水位(米)" />
+        <el-table-column prop="storage" label="蓄水量(万立方米)" />
+        <el-table-column prop="avgInflow" label="日平均入库流量(立方米/秒)" />
+        <el-table-column prop="avgOutflow" label="日平均出库流量(立方米/秒)" />
+        <el-table-column prop="yoyIncrease" label="比去年同期增减(万立方米)" />
+        <el-table-column prop="totalCapacity" label="总库容(万立方米)" />
+        <el-table-column prop="floodLevel" label="汛限水位(米)" />
         <el-table-column label="操作" width="150" fixed="right">
           <template #default="scope">
             <el-button size="small" @click="handleEdit(scope.row)">编辑</el-button>
@@ -221,9 +237,9 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Upload, Download, Plus, UploadFilled } from '@element-plus/icons-vue'
+import { Upload, Download, Plus, UploadFilled, Close } from '@element-plus/icons-vue'
 import axios from 'axios'
 
 // 响应式数据
@@ -283,6 +299,20 @@ const searchForm = reactive({
   floodLevelMax: null
 })
 
+// 可用的筛选字段
+const availableFilterFields = ref([
+  { label: '库水位', value: 'waterLevel', min: null, max: null, step: 0.1, unit: '米' },
+  { label: '蓄水量', value: 'storage', min: null, max: null, step: 1000, unit: '万立方米' },
+  { label: '日平均入库流量', value: 'avgInflow', min: null, max: null, step: 0.1, unit: '立方米/秒' },
+  { label: '日平均出库流量', value: 'avgOutflow', min: null, max: null, step: 0.1, unit: '立方米/秒' },
+  { label: '比去年同期增减', value: 'yoyIncrease', min: null, max: null, step: 1000, unit: '万立方米' },
+  { label: '总库容', value: 'totalCapacity', min: null, max: null, step: 1000, unit: '万立方米' },
+  { label: '汛限水位', value: 'floodLevel', min: null, max: null, step: 0.1, unit: '米' }
+])
+
+// 当前激活的筛选字段
+const activeFilterFields = ref([])
+
 // 方法
 const fetchList = async () => {
   loading.value = true
@@ -292,20 +322,8 @@ const fetchList = async () => {
       pageSize: pageSize.value,
       reservoirName: searchForm.reservoirName,
       date: searchForm.date,
-      waterLevelMin: searchForm.waterLevelMin,
-      waterLevelMax: searchForm.waterLevelMax,
-      storageMin: searchForm.storageMin,
-      storageMax: searchForm.storageMax,
-      avgInflowMin: searchForm.avgInflowMin,
-      avgInflowMax: searchForm.avgInflowMax,
-      avgOutflowMin: searchForm.avgOutflowMin,
-      avgOutflowMax: searchForm.avgOutflowMax,
-      yoyIncreaseMin: searchForm.yoyIncreaseMin,
-      yoyIncreaseMax: searchForm.yoyIncreaseMax,
-      totalCapacityMin: searchForm.totalCapacityMin,
-      totalCapacityMax: searchForm.totalCapacityMax,
-      floodLevelMin: searchForm.floodLevelMin,
-      floodLevelMax: searchForm.floodLevelMax
+      ...Object.fromEntries(activeFilterFields.value.map(field => [field.value + 'Min', searchForm[field.value + 'Min']])),
+      ...Object.fromEntries(activeFilterFields.value.map(field => [field.value + 'Max', searchForm[field.value + 'Max']]))
     }
     const response = await axios.get('http://localhost:8080/api/waterSituation/list', { params })
     tableData.value = response.data.list
@@ -333,75 +351,19 @@ const resetSearch = () => {
   Object.keys(searchForm).forEach(key => {
     searchForm[key] = key === 'date' ? '' : null
   })
+  activeFilterFields.value = []
   selectedField.value = ''
   currentPage.value = 1
   fetchList()
 }
 
 const handleFieldChange = (value) => {
-  selectedField.value = value
-}
-
-const getFieldLabel = (field) => {
-  switch (field) {
-    case 'waterLevel':
-      return '库水位(米)'
-    case 'storage':
-      return '蓄水量(万立方米)'
-    case 'avgInflow':
-      return '日平均入库流量(立方米/秒)'
-    case 'avgOutflow':
-      return '日平均出库流量(立方米/秒)'
-    case 'yoyIncrease':
-      return '比去年同期增减(万立方米)'
-    case 'totalCapacity':
-      return '总库容(万立方米)'
-    case 'floodLevel':
-      return '汛限水位(米)'
-    default:
-      return ''
-  }
-}
-
-const getFieldStep = (field) => {
-  switch (field) {
-    case 'waterLevel':
-      return 0.1
-    case 'storage':
-      return 1000
-    case 'avgInflow':
-      return 0.1
-    case 'avgOutflow':
-      return 0.1
-    case 'yoyIncrease':
-      return 1000
-    case 'totalCapacity':
-      return 1000
-    case 'floodLevel':
-      return 0.1
-    default:
-      return 1
-  }
-}
-
-const getFieldUnit = (field) => {
-  switch (field) {
-    case 'waterLevel':
-      return '米'
-    case 'storage':
-      return '万立方米'
-    case 'avgInflow':
-      return '立方米/秒'
-    case 'avgOutflow':
-      return '立方米/秒'
-    case 'yoyIncrease':
-      return '万立方米'
-    case 'totalCapacity':
-      return '万立方米'
-    case 'floodLevel':
-      return '米'
-    default:
-      return ''
+  if (value && !activeFilterFields.value.some(field => field.value === value)) {
+    const newField = availableFilterFields.value.find(field => field.value === value)
+    if (newField) {
+      activeFilterFields.value.push(newField)
+      selectedField.value = '' // 清空下拉框
+    }
   }
 }
 
@@ -565,20 +527,8 @@ const handleExport = async () => {
     const params = {
       reservoirName: searchForm.reservoirName,
       date: searchForm.date,
-      waterLevelMin: searchForm.waterLevelMin,
-      waterLevelMax: searchForm.waterLevelMax,
-      storageMin: searchForm.storageMin,
-      storageMax: searchForm.storageMax,
-      avgInflowMin: searchForm.avgInflowMin,
-      avgInflowMax: searchForm.avgInflowMax,
-      avgOutflowMin: searchForm.avgOutflowMin,
-      avgOutflowMax: searchForm.avgOutflowMax,
-      yoyIncreaseMin: searchForm.yoyIncreaseMin,
-      yoyIncreaseMax: searchForm.yoyIncreaseMax,
-      totalCapacityMin: searchForm.totalCapacityMin,
-      totalCapacityMax: searchForm.totalCapacityMax,
-      floodLevelMin: searchForm.floodLevelMin,
-      floodLevelMax: searchForm.floodLevelMax
+      ...Object.fromEntries(activeFilterFields.value.map(field => [field.value + 'Min', searchForm[field.value + 'Min']])),
+      ...Object.fromEntries(activeFilterFields.value.map(field => [field.value + 'Max', searchForm[field.value + 'Max']]))
     }
     
     const response = await axios.get('http://localhost:8080/api/waterSituation/export', {
@@ -624,10 +574,45 @@ const handleDelete = async (row) => {
   }
 }
 
+// 动态筛选字段相关方法
+const addFilterField = () => {
+  if (selectedField.value && !activeFilterFields.value.some(field => field.value === selectedField.value)) {
+    const newField = availableFilterFields.value.find(field => field.value === selectedField.value)
+    if (newField) {
+      activeFilterFields.value.push(newField)
+      selectedField.value = '' // 清空下拉框
+    }
+  }
+}
+
+const removeFilterField = (fieldValue) => {
+  activeFilterFields.value = activeFilterFields.value.filter(field => field.value !== fieldValue)
+  // Clear the values in searchForm when the field is removed
+  searchForm[fieldValue + 'Min'] = null
+  searchForm[fieldValue + 'Max'] = null
+}
+
+const checkAndRemoveField = (fieldValue) => {
+  if (searchForm[fieldValue + 'Min'] === null && searchForm[fieldValue + 'Max'] === null) {
+    removeFilterField(fieldValue)
+  }
+}
+
 // 生命周期
 onMounted(() => {
   fetchList()
 })
+
+// 监听搜索表单变化，自动移除无值的筛选字段
+watch(searchForm, (newVal) => {
+  activeFilterFields.value.forEach(field => {
+    const minValue = newVal[field.value + 'Min']
+    const maxValue = newVal[field.value + 'Max']
+    if (minValue === null && maxValue === null) {
+      removeFilterField(field.value)
+    }
+  })
+}, { deep: true })
 </script>
 
 <style scoped>
@@ -708,4 +693,95 @@ onMounted(() => {
 :deep(.el-form) {
   max-width: 100%;
 }
+
+/* 表格容器 */
+.table-container {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  overflow: hidden;
+}
+
+/* 表格标头美化 */
+:deep(.el-table) {
+  border-radius: 8px;
+  overflow: hidden;
+  width: 100% !important;
+}
+
+:deep(.el-table__header) {
+  background: #f5f7fa;
+}
+
+:deep(.el-table__header th) {
+  background: #f5f7fa !important;
+  color: #606266 !important;
+  font-weight: 700 !important;
+  font-size: 13px !important;
+  padding: 12px 8px !important;
+  border-bottom: 1px solid #ebeef5 !important;
+  text-align: center !important;
+  white-space: nowrap !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  min-width: 80px !important;
+  max-width: none !important;
+  width: auto !important;
+  box-sizing: border-box !important;
+}
+
+:deep(.el-table__header th:hover) {
+  background: #e4e7ed !important;
+}
+
+:deep(.el-table__body td) {
+  padding: 10px 8px !important;
+  text-align: center !important;
+  border-bottom: 1px solid #ebeef5 !important;
+  white-space: nowrap !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  width: auto !important;
+  box-sizing: border-box !important;
+}
+
+:deep(.el-table__body tr:hover > td) {
+  background-color: #f5f7fa !important;
+}
+
+:deep(.el-table__body tr:nth-child(even)) {
+  background-color: #fafafa;
+}
+
+/* 操作列样式 */
+:deep(.el-table__body td:last-child) {
+  text-align: center !important;
+}
+
+:deep(.el-table__body td:last-child .el-button) {
+  margin: 0 4px;
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
+/* 强制表格列自适应 */
+:deep(.el-table__body-wrapper) {
+  overflow-x: auto !important;
+}
+
+:deep(.el-table__header-wrapper) {
+  overflow: visible !important;
+}
+
+/* 确保列内容不被截断 */
+:deep(.el-table .cell) {
+  white-space: nowrap !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+}
+
+/* 启用列宽调整的视觉提示 */
+/* 移除自定义光标，使用 Element Plus 默认的列边缘光标 */
+
+
 </style> 
