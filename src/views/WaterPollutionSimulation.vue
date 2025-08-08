@@ -13,30 +13,77 @@
             <input type="checkbox" v-model="layers.districts" @change="toggleLayer('districts')">
             区县边界
           </label>
+<<<<<<< HEAD
+=======
+          <div class="layer-color-control">
+            <div class="color-preview" :style="{ backgroundColor: layerColors.districts }" @click="showColorPicker('districts')"></div>
+            <input type="color" v-model="layerColors.districts" @change="updateLayerColor('districts')" class="color-input" data-layer="districts" />
+          </div>
+>>>>>>> origin/main
         </div>
         <div class="layer-control">
           <label>
             <input type="checkbox" v-model="layers.waterLines" @change="toggleLayer('waterLines')">
             水系线数据
           </label>
+<<<<<<< HEAD
+=======
+          <div class="layer-color-control">
+            <div class="color-preview" :style="{ backgroundColor: layerColors.waterLines }" @click="showColorPicker('waterLines')"></div>
+            <input type="color" v-model="layerColors.waterLines" @change="updateLayerColor('waterLines')" class="color-input" data-layer="waterLines" />
+          </div>
+>>>>>>> origin/main
         </div>
         <div class="layer-control">
           <label>
             <input type="checkbox" v-model="layers.waterAreas" @change="toggleLayer('waterAreas')">
             水系面数据
           </label>
+<<<<<<< HEAD
+=======
+          <div class="layer-color-control">
+            <div class="color-preview" :style="{ backgroundColor: layerColors.waterAreas }" @click="showColorPicker('waterAreas')"></div>
+            <input type="color" v-model="layerColors.waterAreas" @change="updateLayerColor('waterAreas')" class="color-input" data-layer="waterAreas" />
+          </div>
+>>>>>>> origin/main
         </div>
         <div class="layer-control">
           <label>
             <input type="checkbox" v-model="layers.reservoirs" @change="toggleLayer('reservoirs')">
+<<<<<<< HEAD
             水库数据
           </label>
+=======
+            北京市水库面
+          </label>
+          <div class="layer-color-control">
+            <div class="color-preview" :style="{ backgroundColor: layerColors.reservoirs }" @click="showColorPicker('reservoirs')"></div>
+            <input type="color" v-model="layerColors.reservoirs" @change="updateLayerColor('reservoirs')" class="color-input" data-layer="reservoirs" />
+          </div>
+        </div>
+        <div class="layer-control">
+          <label>
+            <input type="checkbox" v-model="layers.monitoringPoints" @change="toggleLayer('monitoringPoints')">
+            监测点
+          </label>
+          <div class="layer-color-control">
+            <div class="color-preview point-preview" :style="{ backgroundColor: layerColors.monitoringPoints }" @click="showColorPicker('monitoringPoints')"></div>
+            <input type="color" v-model="layerColors.monitoringPoints" @change="updateLayerColor('monitoringPoints')" class="color-input" data-layer="monitoringPoints" />
+          </div>
+>>>>>>> origin/main
         </div>
         <div class="layer-control">
           <label>
             <input type="checkbox" v-model="layers.settlements" @change="toggleLayer('settlements')">
             居民地地名
           </label>
+<<<<<<< HEAD
+=======
+          <div class="layer-color-control">
+            <div class="color-preview point-preview" :style="{ backgroundColor: layerColors.settlements }" @click="showColorPicker('settlements')"></div>
+            <input type="color" v-model="layerColors.settlements" @change="updateLayerColor('settlements')" class="color-input" data-layer="settlements" />
+          </div>
+>>>>>>> origin/main
         </div>
       </div>
       
@@ -86,6 +133,10 @@
         <p>水系面积: {{ dataStats.waterAreas }}</p>
         <p>水库数量: {{ dataStats.reservoirs }}</p>
         <p>居民地数量: {{ dataStats.settlements }}</p>
+<<<<<<< HEAD
+=======
+        <p>监测点数量: {{ dataStats.monitoringPoints }}</p>
+>>>>>>> origin/main
       </div>
       
       <!-- 加载提示 -->
@@ -123,7 +174,22 @@ export default {
       waterLines: true,
       waterAreas: true,
       reservoirs: true,
+<<<<<<< HEAD
       settlements: false
+=======
+      settlements: false,
+      monitoringPoints: true
+    })
+    
+    // 图层颜色配置 - 与MapEditor.vue保持一致
+    const layerColors = reactive({
+      districts: '#b3e5fc',
+      waterLines: '#64B5F6',
+      waterAreas: '#29B6F6',
+      reservoirs: '#26C6DA',
+      settlements: '#FFF176',
+      monitoringPoints: '#FF5722'
+>>>>>>> origin/main
     })
     
     // 图层对象
@@ -132,7 +198,12 @@ export default {
       waterLines: null,
       waterAreas: null,
       reservoirs: null,
+<<<<<<< HEAD
       settlements: null
+=======
+      settlements: null,
+      monitoringPoints: null
+>>>>>>> origin/main
     })
     
     // 湖泊模拟组件引用
@@ -167,6 +238,7 @@ export default {
       waterLines: 0,
       waterAreas: 0,
       reservoirs: 0,
+<<<<<<< HEAD
       settlements: 0
     })
     
@@ -178,6 +250,20 @@ export default {
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap contributors'
       }).addTo(map.value)
+=======
+      settlements: 0,
+      monitoringPoints: 0
+    })
+    
+    // 初始化地图 - 去除背景图，与MapEditor.vue保持一致
+    const initMap = () => {
+      map.value = L.map('map', {
+        zoomControl: false,
+        attributionControl: false
+      }).setView([39.9042, 116.4074], 10)
+      
+      // 不加载任何在线底图，保持白色背景
+>>>>>>> origin/main
     }
     
     // 加载GeoJSON数据
@@ -188,7 +274,12 @@ export default {
           waterLines: '/Beijing-GeoJson/北京市_水系线数据.json',
           waterAreas: '/Beijing-GeoJson/北京市_水系面数据.json',
           reservoirs: '/Beijing-GeoJson/北京市水库.json',
+<<<<<<< HEAD
           settlements: '/Beijing-GeoJson/居民地地名.json'
+=======
+          settlements: '/Beijing-GeoJson/居民地地名.json',
+          monitoringPoints: '/Beijing-GeoJson/监测点.geojson'
+>>>>>>> origin/main
         }
         
         for (const [key, filePath] of Object.entries(dataFiles)) {
@@ -197,7 +288,11 @@ export default {
             const data = await response.json()
             
             // 创建图层
+<<<<<<< HEAD
             const layer = L.geoJSON(data, {
+=======
+            let layer = L.geoJSON(data, {
+>>>>>>> origin/main
               style: getLayerStyle(key),
               onEachFeature: (feature, layer) => {
                 if (feature.properties) {
@@ -238,6 +333,21 @@ export default {
               }
             })
             
+<<<<<<< HEAD
+=======
+            // 特殊处理监测点图层，确保显示为点
+            if (key === 'monitoringPoints') {
+              layer = L.geoJSON(data, {
+                pointToLayer: (feature, latlng) => L.circleMarker(latlng, getLayerStyle(key)),
+                onEachFeature: (feature, lyr) => {
+                  if (feature.properties) {
+                    lyr.bindPopup(getPopupContent(key, feature.properties))
+                  }
+                }
+              })
+            }
+            
+>>>>>>> origin/main
             layerObjects[key] = layer
             
             // 更新统计信息
@@ -266,6 +376,7 @@ export default {
       }
     }
     
+<<<<<<< HEAD
     // 获取图层样式
     const getLayerStyle = (layerType) => {
       const styles = {
@@ -279,18 +390,41 @@ export default {
         },
         waterLines: {
           color: '#64B5F6',
+=======
+    // 获取图层样式 - 与MapEditor.vue保持一致的颜色配置
+    const getLayerStyle = (layerType) => {
+      const styles = {
+        districts: {
+          fillColor: layerColors.districts,
+          weight: 2.5,
+          opacity: 0.8,
+          color: layerColors.districts,
+          fillOpacity: 0.5,
+          dashArray: '5, 8'
+        },
+        waterLines: {
+          color: layerColors.waterLines,
+>>>>>>> origin/main
           weight: 2.5,
           opacity: 0.9
         },
         waterAreas: {
+<<<<<<< HEAD
           fillColor: '#29B6F6',
+=======
+          fillColor: layerColors.waterAreas,
+>>>>>>> origin/main
           weight: 1.5,
           opacity: 0.9,
           color: '#0288D1',
           fillOpacity: 0.7
         },
         reservoirs: {
+<<<<<<< HEAD
           fillColor: '#26C6DA',
+=======
+          fillColor: layerColors.reservoirs,
+>>>>>>> origin/main
           weight: 1.5,
           opacity: 0.9,
           color: '#00ACC1',
@@ -298,11 +432,26 @@ export default {
         },
         settlements: {
           radius: 6,
+<<<<<<< HEAD
           fillColor: '#FFF176',
+=======
+          fillColor: layerColors.settlements,
+>>>>>>> origin/main
           color: '#ffffff',
           weight: 1.5,
           opacity: 1,
           fillOpacity: 0.9
+<<<<<<< HEAD
+=======
+        },
+        monitoringPoints: {
+          radius: 8,
+          fillColor: layerColors.monitoringPoints,
+          color: '#fff',
+          weight: 2,
+          opacity: 1,
+          fillOpacity: 0.95
+>>>>>>> origin/main
         }
       }
       
@@ -323,7 +472,13 @@ export default {
                     <strong>类型:</strong> ${properties.fclass || properties.FCLASS || '未知'}<br>
                     <strong>OSM ID:</strong> ${properties.osm_id || properties.OSM_ID || '未知'}`,
         settlements: `<strong>居民地:</strong> ${properties.name || properties.NAME || '未知'}<br>
+<<<<<<< HEAD
                       <strong>类型:</strong> ${properties.fclass || properties.FCLASS || '未知'}`
+=======
+                      <strong>类型:</strong> ${properties.fclass || properties.FCLASS || '未知'}`,
+        monitoringPoints: `<strong>监测点:</strong> ${properties.name || properties.NAME || '未知'}<br>
+                          <strong>类型:</strong> ${properties.fclass || properties.FCLASS || '未知'}`
+>>>>>>> origin/main
       }
       return content[layerType] || '无详细信息'
     }
@@ -344,6 +499,76 @@ export default {
       }
     }
     
+<<<<<<< HEAD
+=======
+    // 图层颜色控制函数
+    const showColorPicker = (layerType) => {
+      // 触发颜色选择器
+      const colorInput = document.querySelector(`input[data-layer="${layerType}"]`)
+      if (colorInput) {
+        colorInput.click()
+      }
+    }
+
+    const updateLayerColor = (layerType) => {
+      const layer = layerObjects[layerType]
+      if (layer && layers[layerType]) {
+        // 更新图层样式
+        const newStyle = getUpdatedLayerStyle(layerType)
+        layer.setStyle(newStyle)
+      }
+    }
+
+    const getUpdatedLayerStyle = (layerType) => {
+      const baseStyles = {
+        districts: {
+          fillColor: layerColors.districts,
+          weight: 2.5,
+          opacity: 0.8,
+          color: layerColors.districts,
+          fillOpacity: 0.5,
+          dashArray: '5, 8'
+        },
+        waterLines: {
+          color: layerColors.waterLines,
+          weight: 2.5,
+          opacity: 0.9
+        },
+        waterAreas: {
+          fillColor: layerColors.waterAreas,
+          weight: 1.5,
+          opacity: 0.9,
+          color: '#0288D1',
+          fillOpacity: 0.7
+        },
+        reservoirs: {
+          fillColor: layerColors.reservoirs,
+          weight: 1.5,
+          opacity: 0.9,
+          color: '#00ACC1',
+          fillOpacity: 0.8
+        },
+        settlements: {
+          radius: 6,
+          fillColor: layerColors.settlements,
+          color: '#ffffff',
+          weight: 1.5,
+          opacity: 1,
+          fillOpacity: 0.9
+        },
+        monitoringPoints: {
+          radius: 8,
+          fillColor: layerColors.monitoringPoints,
+          color: '#fff',
+          weight: 2,
+          opacity: 1,
+          fillOpacity: 0.95
+        }
+      }
+      return baseStyles[layerType] || {}
+    }
+    
+>>>>>>> origin/main
     // 处理湖泊模拟更新
     const onSimulationUpdate = (data) => {
       console.log('湖泊模拟数据更新:', data)
@@ -395,7 +620,14 @@ export default {
       manageLayerZIndex,
       ensureSimulationIndependence,
       onSimulationUpdate,
+<<<<<<< HEAD
       onRiverSimulationUpdate
+=======
+      onRiverSimulationUpdate,
+      layerColors,
+      showColorPicker,
+      updateLayerColor
+>>>>>>> origin/main
     }
   }
 }
@@ -406,16 +638,30 @@ export default {
   height: 100vh;
   display: flex;
   flex-direction: column;
+<<<<<<< HEAD
+=======
+  background: #ffffff; /* 确保容器背景为白色 */
+>>>>>>> origin/main
 }
 
 .map-container {
   flex: 1;
   position: relative;
+<<<<<<< HEAD
   background: #f5f5f5;
+=======
+  background: #ffffff; /* 确保地图容器背景为白色 */
+}
+
+/* 确保地图背景为白色 */
+#map {
+  background: #ffffff !important;
+>>>>>>> origin/main
 }
 
 .layer-control-panel {
   position: absolute;
+<<<<<<< HEAD
   top: 20px;
   left: 20px;
   background: white;
@@ -426,6 +672,60 @@ export default {
   max-width: 280px;
   max-height: 40vh;
   overflow-y: auto;
+=======
+  top: 32px;
+  left: 32px;
+  background: rgba(255,255,255,0.97);
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.10);
+  padding: 20px 28px 20px 24px;
+  z-index: 1000;
+  min-width: 220px;
+  max-width: 360px;
+  width: auto;
+  font-size: 16px;
+}
+
+.layer-control {
+  margin-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.layer-color-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.color-preview {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  border: 2px solid #ddd;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.color-preview:hover {
+  border-color: #999;
+}
+
+.color-preview.point-preview {
+  border-radius: 50%;
+}
+
+.color-input {
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  opacity: 0;
+  position: absolute;
+  pointer-events: none;
+>>>>>>> origin/main
 }
 
 .simulation-panel {
@@ -446,10 +746,13 @@ export default {
   font-size: 1.2rem;
 }
 
+<<<<<<< HEAD
 .layer-control {
   margin-bottom: 10px;
 }
 
+=======
+>>>>>>> origin/main
 .layer-control label {
   display: flex;
   align-items: center;

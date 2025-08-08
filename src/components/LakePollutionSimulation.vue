@@ -130,6 +130,22 @@
       <!-- 时间控制 -->
       <div v-if="simulationResult" class="time-control">
         <h4>时间控制</h4>
+        <div class="time-control-buttons">
+          <button @click="togglePlayPause" class="play-pause-btn" :class="{ 'playing': isPlaying }">
+            {{ isPlaying ? '⏸️ 暂停' : '▶️ 播放' }}
+          </button>
+          <button @click="resetAnimation" class="reset-btn">🔄 重置</button>
+        </div>
+        <div class="speed-control">
+          <label>播放速度: {{ speedMultiplier.toFixed(1) }}x</label>
+          <div class="speed-buttons">
+            <button @click="changeSpeed(0.1)" class="speed-btn" :class="{ 'active': speedMultiplier === 0.1 }">0.1x</button>
+            <button @click="changeSpeed(0.2)" class="speed-btn" :class="{ 'active': speedMultiplier === 0.2 }">0.2x</button>
+            <button @click="changeSpeed(0.5)" class="speed-btn" :class="{ 'active': speedMultiplier === 0.5 }">0.5x</button>
+            <button @click="changeSpeed(1.0)" class="speed-btn" :class="{ 'active': speedMultiplier === 1.0 }">1.0x</button>
+            <button @click="changeSpeed(2.0)" class="speed-btn" :class="{ 'active': speedMultiplier === 2.0 }">2.0x</button>
+          </div>
+        </div>
         <input 
           type="range" 
           v-model="currentTimeIndex" 
@@ -179,15 +195,16 @@ export default {
     const pollutionSourceMarker = ref(null)
     
     // 污染物参数
-    const pollutantType = ref(0)
-    const pollutantMass = ref(2000)
-    const decayRate = ref(0.001)
+    const pollutantType = ref('organic')
+    const pollutantMass = ref(1000)
+    const decayRate = ref(0.1)
     
     const pollutantOptions = [
-      { value: 0, label: '硝基苯', k: 0.15 },
-      { value: 1, label: '苯酚', k: 0.15 },
-      { value: 2, label: '氨氮', k: 0.18 },
-      { value: 3, label: '石油类', k: 0 }
+      { value: 'organic', label: '有机污染物' },
+      { value: 'inorganic', label: '无机污染物' },
+      { value: 'heavy_metal', label: '重金属' },
+      { value: 'nutrient', label: '营养盐' },
+      { value: 'pesticide', label: '农药' }
     ]
     
     // 湖泊参数
@@ -216,6 +233,12 @@ export default {
     const currentTimeDisplay = ref('')
     const maxConcentration = ref(0)
     
+    // 播放控制
+    const isPlaying = ref(false)
+    const animationInterval = ref(null)
+    const animationSpeed = ref(500) // 播放速度（毫秒），初始为500ms（0.2倍速）
+    const speedMultiplier = ref(0.2) // 速度倍数
+    
     // 图层管理
     const gridLayer = ref(null)
     const pollutionLayer = ref(null)
@@ -228,10 +251,20 @@ export default {
       emit('close')
     }
     
-    const onPollutantChange = (value) => {
-      const pollutant = pollutantOptions.find(p => p.value === value)
-      if (pollutant) {
-        decayRate.value = pollutant.k
+    const onPollutantChange = () => {
+      // 根据污染物类型设置默认参数（湖泊环境）
+      const defaultParams = {
+        organic: { mass: 2000, decay: 0.15 },      // 有机污染物：中等质量，中等降解
+        inorganic: { mass: 1500, decay: 0.08 },    // 无机污染物：较大质量，较慢降解
+        heavy_metal: { mass: 500, decay: 0.002 },  // 重金属：较小质量，极慢降解
+        nutrient: { mass: 3000, decay: 0.25 },     // 营养盐：大质量，快速降解
+        pesticide: { mass: 200, decay: 0.05 }      // 农药：小质量，较慢降解
+      }
+      
+      const params = defaultParams[pollutantType.value]
+      if (params) {
+        pollutantMass.value = params.mass
+        decayRate.value = params.decay
       }
     }
     
@@ -799,6 +832,63 @@ export default {
       return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`
     }
     
+    // 播放/暂停控制
+    const togglePlayPause = () => {
+      if (isPlaying.value) {
+        pauseAnimation()
+      } else {
+        startAnimation()
+      }
+    }
+    
+    // 改变播放速度
+    const changeSpeed = (multiplier) => {
+      speedMultiplier.value = multiplier
+      // 基础速度是100ms，根据倍数调整
+      animationSpeed.value = Math.round(100 / multiplier)
+      
+      // 如果正在播放，重新启动动画以应用新速度
+      if (isPlaying.value) {
+        pauseAnimation()
+        startAnimation()
+      }
+    }
+    
+    // 开始播放动画
+    const startAnimation = () => {
+      if (!simulationResult.value || timeSteps.value.length === 0) return
+      
+      isPlaying.value = true
+      animationInterval.value = setInterval(() => {
+        if (currentTimeIndex.value >= timeSteps.value.length - 1) {
+          // 播放完毕，重置到开始
+          currentTimeIndex.value = 0
+        } else {
+          currentTimeIndex.value++
+        }
+        
+        currentTimeDisplay.value = formatTime(timeSteps.value[currentTimeIndex.value])
+        updateMapDisplay(currentTimeIndex.value)
+      }, animationSpeed.value)
+    }
+    
+    // 暂停动画
+    const pauseAnimation = () => {
+      isPlaying.value = false
+      if (animationInterval.value) {
+        clearInterval(animationInterval.value)
+        animationInterval.value = null
+      }
+    }
+    
+    // 重置动画
+    const resetAnimation = () => {
+      pauseAnimation()
+      currentTimeIndex.value = 0
+      currentTimeDisplay.value = formatTime(timeSteps.value[0])
+      updateMapDisplay(0)
+    }
+    
     const onTimeChange = (event) => {
       const index = parseInt(event.target.value)
       currentTimeIndex.value = index
@@ -807,6 +897,9 @@ export default {
     }
     
     const clearSimulation = () => {
+      // 停止动画
+      pauseAnimation()
+      
       // 清除模拟结果
       simulationResult.value = null
       currentTimeIndex.value = 0
@@ -840,6 +933,9 @@ export default {
       initializeLakeOptions()
     }, { immediate: true })
     
+    // 初始化污染物参数
+    onPollutantChange()
+    
     return {
       // 状态
       panelVisible,
@@ -869,6 +965,8 @@ export default {
       timeSteps,
       currentTimeDisplay,
       maxConcentration,
+      isPlaying,
+      speedMultiplier,
       
       // 方法
       togglePanel,
@@ -879,6 +977,9 @@ export default {
       generateGrid,
       startSimulation,
       clearSimulation,
+      togglePlayPause,
+      resetAnimation,
+      changeSpeed,
       onTimeChange
     }
   }
@@ -1189,6 +1290,95 @@ class LakeDiffusionModel {
 .time-slider {
   width: 100%;
   margin: 10px 0;
+}
+
+.time-control-buttons {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.play-pause-btn,
+.reset-btn {
+  flex: 1;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: 500;
+}
+
+.play-pause-btn {
+  background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+  color: white;
+}
+
+.play-pause-btn:hover {
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+  transform: translateY(-2px);
+}
+
+.play-pause-btn.playing {
+  background: linear-gradient(135deg, #FF9800 0%, #F57C00 100%);
+}
+
+.reset-btn {
+  background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+  color: white;
+}
+
+.reset-btn:hover {
+  box-shadow: 0 4px 12px rgba(33, 150, 243, 0.4);
+  transform: translateY(-2px);
+}
+
+.speed-control {
+  margin: 15px 0;
+  padding: 10px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  border: 1px solid #e9ecef;
+}
+
+.speed-control label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 0.9rem;
+  color: #495057;
+  font-weight: 500;
+}
+
+.speed-buttons {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.speed-btn {
+  flex: 1;
+  min-width: 50px;
+  padding: 6px 8px;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  background: white;
+  color: #495057;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 500;
+}
+
+.speed-btn:hover {
+  background: #e9ecef;
+  border-color: #adb5bd;
+}
+
+.speed-btn.active {
+  background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+  color: white;
+  border-color: #495057;
 }
 
 .time-info {

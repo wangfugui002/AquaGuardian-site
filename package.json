@@ -9,10 +9,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@element-plus/icons-vue": "^2.3.1",
     "axios": "^1.5.0",
     "echarts": "^5.6.0",
-    "element-plus": "^2.10.5",
     "esri-leaflet": "^3.0.17",
     "leaflet": "^1.9.4",
     "vue": "^3.3.4",

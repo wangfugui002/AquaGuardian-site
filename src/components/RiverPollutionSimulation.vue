@@ -85,10 +85,6 @@
           <label>纵向弥散系数 (m²/s):</label>
           <input type="number" v-model="longitudinalDiffusion" min="0.1" max="100" step="0.1" class="form-input">
         </div>
-        <div class="param-group">
-          <label>横向弥散系数 (m²/s):</label>
-          <input type="number" v-model="transverseDiffusion" min="0.1" max="100" step="0.1" class="form-input">
-        </div>
       </div>
 
       <!-- 步骤5: 设置模拟参数 -->
@@ -130,6 +126,22 @@
       <!-- 时间控制 -->
       <div v-if="simulationResult" class="time-control">
         <h4>时间控制</h4>
+        <div class="time-control-buttons">
+          <button @click="togglePlayPause" class="play-pause-btn" :class="{ 'playing': isPlaying }">
+            {{ isPlaying ? '⏸️ 暂停' : '▶️ 播放' }}
+          </button>
+          <button @click="resetAnimation" class="reset-btn">🔄 重置</button>
+        </div>
+        <div class="speed-control">
+          <label>播放速度: {{ speedMultiplier.toFixed(1) }}x</label>
+          <div class="speed-buttons">
+            <button @click="changeSpeed(0.1)" class="speed-btn" :class="{ 'active': speedMultiplier === 0.1 }">0.1x</button>
+            <button @click="changeSpeed(0.2)" class="speed-btn" :class="{ 'active': speedMultiplier === 0.2 }">0.2x</button>
+            <button @click="changeSpeed(0.5)" class="speed-btn" :class="{ 'active': speedMultiplier === 0.5 }">0.5x</button>
+            <button @click="changeSpeed(1.0)" class="speed-btn" :class="{ 'active': speedMultiplier === 1.0 }">1.0x</button>
+            <button @click="changeSpeed(2.0)" class="speed-btn" :class="{ 'active': speedMultiplier === 2.0 }">2.0x</button>
+          </div>
+        </div>
         <input 
           type="range" 
           v-model="currentTimeIndex" 
@@ -206,7 +218,6 @@ export default {
     const riverDepth = ref(3)
     const flowVelocity = ref(1.5)
     const longitudinalDiffusion = ref(10)
-    const transverseDiffusion = ref(5)
     
     // 模拟参数
     const gridSpacing = ref(20)
@@ -226,6 +237,12 @@ export default {
     const currentTimeIndex = ref(0)
     const currentTimeDisplay = ref('')
     const maxConcentration = ref(0)
+    
+    // 播放控制
+    const isPlaying = ref(false)
+    const animationInterval = ref(null)
+    const animationSpeed = ref(500) // 播放速度（毫秒），初始为500ms（0.2倍速）
+    const speedMultiplier = ref(0.2) // 速度倍数
     
     // 图层引用
     const gridLayer = ref(null)
@@ -547,28 +564,37 @@ export default {
         props.map.removeLayer(pollutionSourceMarker.value)
       }
       
-      // 创建新的污染源标记
-      pollutionSourceMarker.value = L.marker(position, {
-        icon: L.divIcon({
-          className: 'pollution-source-marker',
-          html: '⚠️',
-          iconSize: [30, 30],
-          iconAnchor: [15, 15]
-        })
-      }).addTo(props.map)
+      // 创建新的污染源标记 - 使用circleMarker确保跟随地图缩放
+      pollutionSourceMarker.value = L.circleMarker(position, {
+        radius: 8,
+        fillColor: '#e74c3c',
+        color: '#c0392b',
+        weight: 2,
+        opacity: 1,
+        fillOpacity: 0.8
+      })
+      
+      // 添加弹窗信息
+      pollutionSourceMarker.value.bindPopup(`
+        <strong>污染源位置</strong><br>
+        纬度: ${position.lat.toFixed(6)}<br>
+        经度: ${position.lng.toFixed(6)}
+      `)
+      
+      props.map.addLayer(pollutionSourceMarker.value)
       
       console.log('设置污染源位置:', position)
     }
     
     // 污染物类型变化处理
     const onPollutantChange = () => {
-      // 根据污染物类型设置默认参数
+      // 根据污染物类型设置默认参数（河流环境）
       const defaultParams = {
-        organic: { mass: 100, decay: 0.1 },
-        inorganic: { mass: 50, decay: 0.05 },
-        heavy_metal: { mass: 10, decay: 0.001 },
-        nutrient: { mass: 200, decay: 0.2 },
-        pesticide: { mass: 5, decay: 0.01 }
+        organic: { mass: 500, decay: 0.12 },      // 有机污染物：中等质量，中等降解
+        inorganic: { mass: 300, decay: 0.06 },    // 无机污染物：较小质量，较慢降解
+        heavy_metal: { mass: 100, decay: 0.001 }, // 重金属：小质量，极慢降解
+        nutrient: { mass: 800, decay: 0.3 },      // 营养盐：较大质量，快速降解
+        pesticide: { mass: 50, decay: 0.03 }      // 农药：小质量，较慢降解
       }
       
       const params = defaultParams[pollutantType.value]
@@ -696,9 +722,11 @@ export default {
         
         console.log('污染源在河流上的距离:', sourceDistance, '米')
         
-        // 为每个网格点计算相对于污染源的距离
+        // 为每个网格点计算相对于污染源的距离（只考虑下游方向）
         gridPoints.forEach(point => {
-          point.sourceDistance = Math.abs(point.distance - sourceDistance)
+          const relativeDistance = point.distance - sourceDistance
+          // 只考虑下游方向的点（相对距离为正）
+          point.sourceDistance = relativeDistance >= 0 ? relativeDistance : -1
         })
         
         // 计算每个时间步的浓度
@@ -723,9 +751,9 @@ export default {
             try {
               const point = gridPoints[i]
               
-              // 使用一维距离计算浓度
+              // 使用一维距离计算浓度（只考虑下游方向）
               const distance = point.sourceDistance
-              if (distance > 5000) { // 5公里外直接设为0
+              if (distance < 0 || distance > 5000) { // 上游或5公里外直接设为0
                 point.concentrations.push(0)
                 continue
               }
@@ -755,6 +783,12 @@ export default {
             
             for (let i = 0; i < gridPoints.length; i++) {
               const point = gridPoints[i]
+              
+              // 检查点是否在下游方向
+              if (point.sourceDistance < 0) {
+                gridPoints[i].concentrations[t] = 0
+                continue
+              }
               
               const prevConcentration = gridPoints[i].concentrations[Math.floor(t / calculationInterval)] || 0
               const nextConcentration = gridPoints[i].concentrations[Math.min(Math.floor(t / calculationInterval) + 1, gridPoints[i].concentrations.length - 1)] || 0
@@ -817,10 +851,11 @@ export default {
         return '#F44336'
       }
       
-      // 添加扩散效果圆圈
+      // 添加扩散效果圆圈（只显示下游方向）
       gridPoints.forEach(point => {
         const concentration = point.concentrations[timeIndex] || 0
-        if (concentration > 0) {
+        // 只显示下游方向的点且浓度大于0
+        if (concentration > 0 && point.sourceDistance >= 0) {
           const circle = L.circleMarker([point.lat, point.lng], {
             radius: 4,
             fillColor: getColor(concentration),
@@ -831,9 +866,66 @@ export default {
           }).addTo(pollutionLayer.value)
           
           // 添加浓度信息
-          circle.bindTooltip(`浓度: ${concentration.toFixed(6)} mg/L`)
+          circle.bindTooltip(`浓度: ${concentration.toFixed(6)} mg/L<br>距离污染源: ${point.sourceDistance.toFixed(0)}m`)
         }
       })
+    }
+    
+    // 播放/暂停控制
+    const togglePlayPause = () => {
+      if (isPlaying.value) {
+        pauseAnimation()
+      } else {
+        startAnimation()
+      }
+    }
+    
+    // 改变播放速度
+    const changeSpeed = (multiplier) => {
+      speedMultiplier.value = multiplier
+      // 基础速度是100ms，根据倍数调整
+      animationSpeed.value = Math.round(100 / multiplier)
+      
+      // 如果正在播放，重新启动动画以应用新速度
+      if (isPlaying.value) {
+        pauseAnimation()
+        startAnimation()
+      }
+    }
+    
+    // 开始播放动画
+    const startAnimation = () => {
+      if (!simulationResult.value || timeSteps.value.length === 0) return
+      
+      isPlaying.value = true
+      animationInterval.value = setInterval(() => {
+        if (currentTimeIndex.value >= timeSteps.value.length - 1) {
+          // 播放完毕，重置到开始
+          currentTimeIndex.value = 0
+        } else {
+          currentTimeIndex.value++
+        }
+        
+        currentTimeDisplay.value = formatTime(timeSteps.value[currentTimeIndex.value])
+        updateMapDisplay(currentTimeIndex.value)
+      }, animationSpeed.value)
+    }
+    
+    // 暂停动画
+    const pauseAnimation = () => {
+      isPlaying.value = false
+      if (animationInterval.value) {
+        clearInterval(animationInterval.value)
+        animationInterval.value = null
+      }
+    }
+    
+    // 重置动画
+    const resetAnimation = () => {
+      pauseAnimation()
+      currentTimeIndex.value = 0
+      currentTimeDisplay.value = formatTime(timeSteps.value[0])
+      updateMapDisplay(0)
     }
     
     // 时间变化处理
@@ -894,7 +986,7 @@ export default {
       }
     }
     
-    // 生成一维河流网格点
+    // 生成一维河流网格点（考虑流向）
     const generateGridPoints = () => {
       const points = []
       const riverGeometry = selectedRiverGeometry.value
@@ -909,9 +1001,10 @@ export default {
       const coordinates = riverGeometry.coordinates
       console.log('河流坐标数量:', coordinates.length)
       
-      // 计算河流总长度
+      // 计算河流总长度和累积距离
       let totalLength = 0
       const segmentLengths = []
+      const cumulativeDistances = [0] // 每个坐标点的累积距离
       
       for (let i = 0; i < coordinates.length - 1; i++) {
         const p1 = coordinates[i]
@@ -932,6 +1025,7 @@ export default {
         
         segmentLengths.push(distance)
         totalLength += distance
+        cumulativeDistances.push(totalLength)
       }
       
       console.log('河流总长度:', totalLength, '米')
@@ -942,28 +1036,28 @@ export default {
       
       console.log('网格间距:', gridSpacingMeters, '米，网格点数量:', numGridPoints)
       
-      // 沿河流生成一维网格点
-      let currentDistance = 0
-      let segmentIndex = 0
-      let segmentStartDistance = 0
-      
+      // 沿河流流向生成一维网格点（从上游到下游）
       for (let i = 0; i < numGridPoints; i++) {
         const targetDistance = i * gridSpacingMeters
         
-        // 找到目标距离所在的线段
-        while (segmentIndex < segmentLengths.length && 
-               currentDistance + segmentLengths[segmentIndex] < targetDistance) {
-          currentDistance += segmentLengths[segmentIndex]
-          segmentStartDistance = currentDistance
-          segmentIndex++
-        }
-        
-        if (segmentIndex >= coordinates.length - 1) {
+        if (targetDistance > totalLength) {
           break // 超出河流范围
         }
         
+        // 找到目标距离所在的线段
+        let segmentIndex = 0
+        for (let j = 0; j < cumulativeDistances.length - 1; j++) {
+          if (targetDistance >= cumulativeDistances[j] && targetDistance <= cumulativeDistances[j + 1]) {
+            segmentIndex = j
+            break
+          }
+        }
+        
         // 在当前线段上插值计算网格点位置
-        const segmentProgress = (targetDistance - segmentStartDistance) / segmentLengths[segmentIndex]
+        const segmentStartDistance = cumulativeDistances[segmentIndex]
+        const segmentEndDistance = cumulativeDistances[segmentIndex + 1]
+        const segmentProgress = (targetDistance - segmentStartDistance) / (segmentEndDistance - segmentStartDistance)
+        
         const p1 = coordinates[segmentIndex]
         const p2 = coordinates[segmentIndex + 1]
         
@@ -974,7 +1068,7 @@ export default {
         points.push({
           lat: lat,
           lng: lng,
-          distance: targetDistance, // 沿河流的距离
+          distance: targetDistance, // 沿河流的距离（从上游到下游）
           segmentIndex: segmentIndex,
           concentrations: []
         })
@@ -1017,6 +1111,9 @@ export default {
     
     // 清除模拟
     const clearSimulation = () => {
+      // 停止动画
+      pauseAnimation()
+      
       // 清除网格图层
       if (gridLayer.value && props.map.hasLayer(gridLayer.value)) {
         props.map.removeLayer(gridLayer.value)
@@ -1041,6 +1138,9 @@ export default {
     // 组件卸载时清理
     onUnmounted(() => {
       try {
+        // 停止动画
+        pauseAnimation()
+        
         // 清理污染源标记
         if (pollutionSourceMarker.value && props.map) {
           props.map.removeLayer(pollutionSourceMarker.value)
@@ -1082,7 +1182,6 @@ export default {
       riverDepth,
       flowVelocity,
       longitudinalDiffusion,
-      transverseDiffusion,
       gridSpacing,
       simulationHours,
       timeStep,
@@ -1096,6 +1195,8 @@ export default {
       currentTimeIndex,
       currentTimeDisplay,
       maxConcentration,
+      isPlaying,
+      speedMultiplier,
       pollutantOptions,
       canStartSimulation,
       togglePanel,
@@ -1109,6 +1210,9 @@ export default {
       generateGrid,
       startSimulation,
       clearSimulation,
+      togglePlayPause,
+      resetAnimation,
+      changeSpeed,
       onTimeChange
     }
   }
@@ -1128,7 +1232,7 @@ class RiverDiffusionModel {
     this.constant = m / (H * W * Math.sqrt(4 * Math.PI * Ex))
   }
   
-  // 一维河流扩散方程
+  // 一维河流扩散方程（只向下游扩散）
   calculate(t, x) {
     if (t <= 0 || x < 0) return 0
     
@@ -1138,7 +1242,15 @@ class RiverDiffusionModel {
         return 0
       }
       
-      // 一维对流扩散方程解析解
+      // 计算污染物在时间t后的理论位置
+      const expectedPosition = this.vx * t
+      
+      // 只在下游方向计算浓度（x >= 0，且距离污染源不会太远）
+      if (x < 0 || x > expectedPosition + 3 * Math.sqrt(4 * this.Ex * t)) {
+        return 0
+      }
+      
+      // 一维对流扩散方程解析解（只考虑下游扩散）
       const part1 = this.constant / Math.sqrt(t)
       const part2 = Math.pow(x - this.vx * t, 2) / (4 * this.Ex * t)
       const part3 = Math.exp(-this.K1 * t)
@@ -1406,6 +1518,95 @@ class RiverDiffusionModel {
   margin: 10px 0;
 }
 
+.time-control-buttons {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.play-pause-btn,
+.reset-btn {
+  flex: 1;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: 500;
+}
+
+.play-pause-btn {
+  background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+  color: white;
+}
+
+.play-pause-btn:hover {
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+  transform: translateY(-2px);
+}
+
+.play-pause-btn.playing {
+  background: linear-gradient(135deg, #FF9800 0%, #F57C00 100%);
+}
+
+.reset-btn {
+  background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+  color: white;
+}
+
+.reset-btn:hover {
+  box-shadow: 0 4px 12px rgba(33, 150, 243, 0.4);
+  transform: translateY(-2px);
+}
+
+.speed-control {
+  margin: 15px 0;
+  padding: 10px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  border: 1px solid #e9ecef;
+}
+
+.speed-control label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 0.9rem;
+  color: #495057;
+  font-weight: 500;
+}
+
+.speed-buttons {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.speed-btn {
+  flex: 1;
+  min-width: 50px;
+  padding: 6px 8px;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  background: white;
+  color: #495057;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 500;
+}
+
+.speed-btn:hover {
+  background: #e9ecef;
+  border-color: #adb5bd;
+}
+
+.speed-btn.active {
+  background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+  color: white;
+  border-color: #495057;
+}
+
 .time-info {
   display: flex;
   justify-content: space-between;
@@ -1468,17 +1669,7 @@ class RiverDiffusionModel {
   color: #666;
 }
 
-/* 污染源标记样式 */
-:global(.pollution-source-marker) {
-  background: #f44336;
-  border: 2px solid white;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 16px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-}
+
 
 @media (max-width: 768px) {
   .river-simulation-panel {
