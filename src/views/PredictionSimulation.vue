@@ -1,218 +1,11 @@
 <template>
   <div class="prediction-simulation-container">
-<<<<<<< HEAD
-    <prediction-simulation-header title="预测模拟"></prediction-simulation-header>
-=======
     <prediction-simulation-header title="水位预警"></prediction-simulation-header>
->>>>>>> origin/main
     
     <div class="prediction-simulation-content">
       <!-- 显示地图 (现在无论什么功能都会显示地图) -->
       <div id="prediction-map" class="prediction-map"></div>
       
-<<<<<<< HEAD
-      <!-- 图层控制面板 (水平排列在地图上方) -->
-      <div class="layer-controls-horizontal" v-if="activeFeature === 'warning' || activeFeature === 'waterLevelWarning' || activeFeature === 'environmentWarning'">
-        <div class="layer-item">
-          <input type="checkbox" id="district-layer" v-model="warningLayers.district" @change="toggleWarningLayer('district')">
-          <label for="district-layer">区县界</label>
-        </div>
-        <div class="layer-item">
-          <input type="checkbox" id="waterArea-layer" v-model="warningLayers.waterArea" @change="toggleWarningLayer('waterArea')">
-          <label for="waterArea-layer">水系面</label>
-        </div>
-        <div class="layer-item">
-          <input type="checkbox" id="waterLine-layer" v-model="warningLayers.waterLine" @change="toggleWarningLayer('waterLine')">
-          <label for="waterLine-layer">水系线</label>
-        </div>
-        <div class="layer-item">
-          <input type="checkbox" id="reservoir-layer" v-model="warningLayers.reservoir" @change="toggleWarningLayer('reservoir')">
-          <label for="reservoir-layer">水库</label>
-        </div>
-      </div>
-      
-      <!-- 水位预案按钮 (右上角) -->
-      <div class="water-level-plan-button" v-if="activeFeature === 'waterLevelWarning'" @click="openWaterLevelPlan">
-        <span class="plan-icon"></span>
-        <span class="plan-text">水位预案</span>
-      </div>
-      
-      <!-- 水位预案弹窗 -->
-      <div class="modal-overlay" v-if="showWaterLevelPlanModal" @click.self="showWaterLevelPlanModal = false">
-        <div class="water-level-plan-modal">
-          <div class="modal-header">
-            <h3>水位预案管理</h3>
-            <button class="close-button" @click="showWaterLevelPlanModal = false">&times;</button>
-          </div>
-          <div class="modal-body">
-            <div class="plan-tabs">
-              <div 
-                class="plan-tab" 
-                :class="{'active': waterLevelPlanType === 'normal'}"
-                @click="waterLevelPlanType = 'normal'"
-              >
-                正常水位
-              </div>
-              <div 
-                class="plan-tab" 
-                :class="{'active': waterLevelPlanType === 'warning'}"
-                @click="waterLevelPlanType = 'warning'"
-              >
-                警戒水位
-              </div>
-              <div 
-                class="plan-tab" 
-                :class="{'active': waterLevelPlanType === 'danger'}"
-                @click="waterLevelPlanType = 'danger'"
-              >
-                危险水位
-              </div>
-            </div>
-            
-            <div class="plan-content">
-              <div v-if="waterLevelPlanType === 'normal'">
-                <h4>正常水位预案 <span class="water-level-value">≤ 107m</span></h4>
-                <ul class="plan-list">
-                  <li>每日常规监测水位变化</li>
-                  <li>监控系统正常运行维护</li>
-                  <li>定期巡查水库周边区域</li>
-                  <li>进行常规水质检测</li>
-                  <li>确保泄洪设备处于良好状态</li>
-                </ul>
-                <div class="plan-remark">
-                  <strong>备注：</strong>正常水位时，各系统保持常规监测频率，每日记录水位变化情况。
-                </div>
-              </div>
-              
-              <div v-if="waterLevelPlanType === 'warning'">
-                <h4>警戒水位预案 <span class="water-level-value warning">107m ~ 110.8m</span></h4>
-                <ul class="plan-list warning">
-                  <li><strong>加强监测：</strong>提高监测频率至每4小时一次</li>
-                  <li><strong>启动预警：</strong>向管理部门及相关人员发送预警信息</li>
-                  <li><strong>泄洪准备：</strong>检查泄洪设备，准备必要时开启泄洪</li>
-                  <li><strong>人员准备：</strong>应急队伍进入准备状态</li>
-                  <li><strong>交通管制：</strong>准备对低洼地区道路实施交通管制</li>
-                </ul>
-                <div class="plan-actions">
-                  <button class="plan-action-btn">发送预警信息</button>
-                  <button class="plan-action-btn">查看受影响区域</button>
-                </div>
-              </div>
-              
-              <div v-if="waterLevelPlanType === 'danger'">
-                <h4>危险水位预案 <span class="water-level-value danger">> 110.8m</span></h4>
-                <ul class="plan-list danger">
-                  <li><strong>全面监测：</strong>提高监测频率至每小时一次</li>
-                  <li><strong>启动应急响应：</strong>立即启动应急响应机制</li>
-                  <li><strong>强制泄洪：</strong>开启泄洪设施，控制水位上涨</li>
-                  <li><strong>人员疏散：</strong>组织下游及低洼地区人员疏散</li>
-                  <li><strong>全面交通管制：</strong>对受影响区域实施交通管制</li>
-                  <li><strong>救援队伍：</strong>调动专业救援队伍待命</li>
-                </ul>
-                <div class="plan-actions">
-                  <button class="plan-action-btn danger">启动紧急响应</button>
-                  <button class="plan-action-btn danger">发布疏散通知</button>
-                  <button class="plan-action-btn">模拟淹没范围</button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <!-- 左侧功能栏 -->
-      <div class="left-sidebar">
-        <h3 class="sidebar-title">功能设置</h3>
-        <div class="sidebar-menu">
-          <!-- 预警分析菜单项 -->
-          <div class="menu-item" @click="toggleWarningMenu">
-            <div class="menu-icon">
-              <i class="feature-icon warning-icon"></i>
-            </div>
-            <span class="menu-text">预警分析</span>
-            <i class="menu-arrow" :class="{'menu-arrow-expanded': showWarningSubmenu}"></i>
-          </div>
-          
-          <!-- 预警分析子菜单 -->
-          <div class="submenu" v-if="showWarningSubmenu">
-            <div class="submenu-item" @click.stop="activateFeature('waterLevelWarning')">
-              <div class="submenu-icon water-level-icon"></div>
-              <span class="submenu-text">水位预警</span>
-            </div>
-            <div class="submenu-item" @click.stop="activateFeature('environmentWarning')">
-              <div class="submenu-icon environment-icon"></div>
-              <span class="submenu-text">环境预警</span>
-            </div>
-          </div>
-          
-          <!-- 其他功能项 -->
-          <div class="menu-item" @click="activateFeature('flood')">
-            <div class="menu-icon">
-              <i class="feature-icon flood-icon"></i>
-            </div>
-            <span class="menu-text">水库淹没模拟</span>
-          </div>
-          <div class="menu-item" @click="activateFeature('pollution')">
-            <div class="menu-icon">
-              <i class="feature-icon pollution-icon"></i>
-            </div>
-            <span class="menu-text">污染物扩散模拟</span>
-          </div>
-        </div>
-      </div>
-      
-      <!-- 右侧控制栏已移除 -->
-      
-      <!-- 湖泊污染扩散模拟面板（仅污染物扩散模拟时显示，且变量隔离） -->
-      <div v-if="activeFeature === 'pollution' && pollutionScope.showLakeSimulation" class="control-panel">
-        <h3>图层控制</h3>
-        <div class="layer-control">
-          <label>
-            <input type="checkbox" v-model="pollutionScope.layers.districts" @change="pollutionScope.toggleLayer('districts')">
-            区县边界
-          </label>
-        </div>
-        <div class="layer-control">
-          <label>
-            <input type="checkbox" v-model="pollutionScope.layers.waterLines" @change="pollutionScope.toggleLayer('waterLines')">
-            水系线数据
-          </label>
-        </div>
-        <div class="layer-control">
-          <label>
-            <input type="checkbox" v-model="pollutionScope.layers.waterAreas" @change="pollutionScope.toggleLayer('waterAreas')">
-            水系面数据
-          </label>
-        </div>
-        <div class="layer-control">
-          <label>
-            <input type="checkbox" v-model="pollutionScope.layers.reservoirs" @change="pollutionScope.toggleLayer('reservoirs')">
-            水库数据
-          </label>
-        </div>
-        <div class="layer-control">
-          <label>
-            <input type="checkbox" v-model="pollutionScope.layers.settlements" @change="pollutionScope.toggleLayer('settlements')">
-            居民地地名
-          </label>
-        </div>
-        <div class="simulation-control">
-          <h4>模拟功能</h4>
-          <button @click="pollutionScope.showLakeSimulation = !pollutionScope.showLakeSimulation" class="simulation-btn">
-            {{ pollutionScope.showLakeSimulation ? '隐藏' : '显示' }}湖泊污染模拟
-          </button>
-          <p v-if="pollutionScope.showLakeSimulation" class="simulation-hint">
-            💡 点击地图上的湖泊多边形来选择要模拟的湖泊
-          </p>
-        </div>
-      </div>
-      <LakePollutionSimulationPrediction 
-        v-if="activeFeature === 'pollution' && pollutionScope.showLakeSimulation"
-        ref="pollutionScope.lakeSimulationRef"
-        :map="map"
-        :water-areas-layer="pollutionScope.baseWaterAreasLayer"
-      />
-=======
       <!-- 图层控制面板 -->
       <div class="control-panel" v-if="activeFeature === 'warning' || activeFeature === 'waterLevelWarning' || activeFeature === 'environmentWarning'">
         <h3>图层控制</h3>
@@ -416,51 +209,31 @@
           <button class="btn-close" @click="closePlanModal">关闭</button>
         </div>
       </div>
->>>>>>> origin/main
     </div>
   </div>
 </template>
 
 <script>
-<<<<<<< HEAD
-import { onMounted, onUnmounted, ref, nextTick, watch, reactive } from 'vue'
-=======
 import { onMounted, onUnmounted, ref, nextTick, watch } from 'vue'
->>>>>>> origin/main
 import L from 'leaflet'
 import * as EsriLeaflet from 'esri-leaflet'
 import PredictionSimulationHeader from '../components/PredictionSimulationHeader.vue'
 import axios from 'axios'
 import * as echarts from 'echarts'
-<<<<<<< HEAD
-import LakePollutionSimulationPrediction from '../components/LakePollutionSimulationPrediction.vue'
-=======
->>>>>>> origin/main
 
 export default {
   name: 'PredictionSimulation',
   components: {
-<<<<<<< HEAD
-    PredictionSimulationHeader,
-    LakePollutionSimulationPrediction
-  },
-  setup() {
-    const map = ref(null);
-=======
     PredictionSimulationHeader
   },
   setup() {
     let map = null;
->>>>>>> origin/main
     const activeFeature = ref(null);
     let reservoirLayer = null;
     const showTrendDetail = ref(false);
     const showReservoirDetail = ref(false);
     const showMonitoringDetail = ref(false);
     const showWarningDetail = ref(false);
-<<<<<<< HEAD
-    const showWarningSubmenu = ref(false); // 预警分析子菜单显示状态
-=======
     const showAnalysisModal = ref(false);
     const analysisData = ref(null);
     const analysisModalRef = ref(null);
@@ -477,7 +250,6 @@ export default {
     const planDragOffset = ref({ x: 0, y: 0 });
     const planModalPosition = ref({ x: 0, y: 0 });
 
->>>>>>> origin/main
     const echartsRef = ref(null);
     const monitoringChartRef = ref(null);
     let chartInstance = null;
@@ -486,20 +258,6 @@ export default {
     // 预警分析相关状态
     const warningLayers = ref({
       district: true,
-<<<<<<< HEAD
-      waterArea: true,
-      waterLine: true,
-      reservoir: true
-    });
-    
-    // 地图图层
-    const mapLayers = reactive({
-      district: null,
-      waterArea: null,
-      waterLine: null,
-      reservoir: null
-    });
-=======
       waterLine: true,
       reservoir: true,
       monitoringPoints: true
@@ -523,7 +281,6 @@ export default {
     
     // 区县标注图层
     let districtLabels = [];
->>>>>>> origin/main
     
     // 水库淹没模拟相关状态
     const floodParams = ref({
@@ -686,11 +443,7 @@ export default {
 
     // 初始化地图
     const initMap = () => {
-<<<<<<< HEAD
-      map.value = L.map('prediction-map', {
-=======
       map = L.map('prediction-map', {
->>>>>>> origin/main
         backgroundColor: '#ffffff', // 设置地图背景色为白色
         zoomControl: false // 先禁用默认缩放控件
       }).setView([39.9042, 116.4074], 9); // 修正了北京的中心点和默认缩放级别
@@ -699,11 +452,7 @@ export default {
       
       // 在自定义位置添加缩放控件
       setTimeout(() => {
-<<<<<<< HEAD
-        L.control.zoom({ position: 'topleft' }).addTo(map.value);
-=======
         L.control.zoom({ position: 'topleft' }).addTo(map);
->>>>>>> origin/main
       }, 200);
     }
     
@@ -712,54 +461,6 @@ export default {
       try {
         // 加载区县界
         if (warningLayers.value.district) {
-<<<<<<< HEAD
-          const districtResponse = await fetch('./Beijing-GeoJson-Jx/北京区县界2.json');
-          const districtData = await districtResponse.json();
-          
-          // 检查GeoJSON数据结构
-          console.log("区县数据结构:", districtData.features[0]);
-          
-          // 预定义区县颜色数组
-          const districtColors = [
-            '#E3F2FD', '#E8F5E9', '#FFF8E1', '#FCE4EC', '#F3E5F5',
-            '#E8EAF6', '#E0F2F1', '#F1F8E9', '#FFF3E0', '#EFEBE9',
-            '#E0F7FA', '#FAFAFA', '#F1F3F4', '#E1F5FE', '#E8F5E9',
-            '#FFFDE7', '#FBE9E7', '#F9FBE7', '#E0F7FA', '#F3E5F5'
-          ];
-          
-          let colorIndex = 0;
-          
-          mapLayers.district = L.geoJSON(districtData, {
-            style: (feature) => {
-              // 为每个区县分配不同颜色
-              const color = districtColors[colorIndex % districtColors.length];
-              colorIndex++;
-              
-              return {
-                color: '#666', // 边界颜色改为更柔和的灰色
-                weight: 1.5,   // 边界宽度略微调小
-                opacity: 0.8,
-                fillColor: color,
-                fillOpacity: 0.4 // 降低填充不透明度
-              };
-            },
-            onEachFeature: (feature, layer) => {
-              // 检查每个区县的属性
-              console.log("区县属性:", feature.properties);
-              
-              // 尝试获取区县名称 (检查可能的属性名)
-              const districtName = feature.properties.name || 
-                                  feature.properties.NAME || 
-                                  feature.properties.Name ||
-                                  feature.properties.district ||
-                                  feature.properties.DISTRICT ||
-                                  feature.properties.District ||
-                                  feature.properties.xzqmc ||
-                                  feature.properties.XZQMC ||
-                                  '未命名区县';
-              
-              // 添加悬停弹窗
-=======
           const districtResponse = await fetch('./Beijing-GeoJson-Tzy/北京区县界.json');
           const districtData = await districtResponse.json();
           
@@ -786,17 +487,12 @@ export default {
                                   feature.properties.NAME || 
                                   feature.properties.Name ||
                                   '未命名区县';
->>>>>>> origin/main
               layer.bindPopup(`<b>区县名称:</b> ${districtName}`);
               
               // 添加区县名称标注
               try {
                 // 计算多边形的中心点
                 const center = layer.getBounds().getCenter();
-<<<<<<< HEAD
-                console.log(`为区县 ${districtName} 添加标注, 中心点:`, center);
-=======
->>>>>>> origin/main
                 
                 // 创建标注
                 const label = L.divIcon({
@@ -806,50 +502,6 @@ export default {
                   iconAnchor: [40, 15]
                 });
                 
-<<<<<<< HEAD
-                // 将标注添加到地图
-                L.marker(center, {
-                  icon: label,
-                  interactive: false, // 使标注不响应鼠标事件
-                  zIndexOffset: 1000  // 确保标注显示在区县上面
-                }).addTo(map.value);
-              } catch (err) {
-                console.error('添加区县标注失败:', err, districtName);
-              }
-              
-              // 添加鼠标悬停效果
-              layer.on({
-                mouseover: (e) => {
-                  const layer = e.target;
-                  layer.setStyle({
-                    weight: 4,
-                    opacity: 1
-                  });
-                  layer.bringToFront();
-                },
-                mouseout: (e) => {
-                  mapLayers.district.resetStyle(e.target);
-                }
-              });
-            }
-          }).addTo(map.value);
-        }
-        
-        // 加载水系面
-        if (warningLayers.value.waterArea) {
-          const waterAreaResponse = await fetch('./Beijing-GeoJson-Jx/北京市_水系面数据2.json');
-          const waterAreaData = await waterAreaResponse.json();
-          
-          mapLayers.waterArea = L.geoJSON(waterAreaData, {
-            style: {
-              color: '#1E90FF',
-              weight: 1,
-              opacity: 0.8,
-              fillColor: '#1E90FF',
-              fillOpacity: 0.3
-            }
-          }).addTo(map.value);
-=======
                   // 将标注添加到地图并保存到数组中
                   const labelMarker = L.marker(center, {
                   icon: label,
@@ -867,27 +519,15 @@ export default {
           
           // 确保区县边界在最底层
           mapLayers.district.bringToBack();
->>>>>>> origin/main
         }
         
         // 加载水系线
         if (warningLayers.value.waterLine) {
-<<<<<<< HEAD
-          const waterLineResponse = await fetch('./Beijing-GeoJson-Jx/水系线数据.json');
-=======
           const waterLineResponse = await fetch('./Beijing-GeoJson-Tzy/北京市_水系线数据.json');
->>>>>>> origin/main
           const waterLineData = await waterLineResponse.json();
           
           mapLayers.waterLine = L.geoJSON(waterLineData, {
             style: {
-<<<<<<< HEAD
-              color: '#4169E1',
-              weight: 2,
-              opacity: 0.8
-            }
-          }).addTo(map.value);
-=======
               color: layerColors.value.waterLine,
               weight: 2.5,
               opacity: 0.9
@@ -899,38 +539,15 @@ export default {
             mapLayers.waterLine.bringToBack();
             mapLayers.district.bringToBack();
           }
->>>>>>> origin/main
         }
         
         // 加载水库
         if (warningLayers.value.reservoir) {
-<<<<<<< HEAD
-          const reservoirResponse = await fetch('./Beijing-GeoJson-Jx/北京市水库2.json');
-=======
           const reservoirResponse = await fetch('./Beijing-GeoJson-Tzy/北京市水库面.geojson');
->>>>>>> origin/main
           const reservoirData = await reservoirResponse.json();
           
           mapLayers.reservoir = L.geoJSON(reservoirData, {
             style: {
-<<<<<<< HEAD
-              color: '#0000CD',
-              weight: 2,
-              opacity: 0.8,
-              fillColor: '#0000CD',
-              fillOpacity: 0.4
-            },
-            onEachFeature: (feature, layer) => {
-              if (feature.properties && feature.properties.name) {
-                layer.bindPopup(`<b>水库名称:</b> ${feature.properties.name}`);
-              }
-            }
-          }).addTo(map.value);
-        }
-        
-        // 调整地图视图以适应所有图层
-        if (mapLayers.district || mapLayers.waterArea || mapLayers.waterLine || mapLayers.reservoir) {
-=======
               fillColor: layerColors.value.reservoir,
               weight: 1.5,
               opacity: 0.9,
@@ -1504,7 +1121,6 @@ export default {
         }
         
         // 调整地图视图以适应所有图层
->>>>>>> origin/main
           const activeLayers = [];
           Object.values(mapLayers).forEach(layer => {
             if (layer) {
@@ -1514,12 +1130,7 @@ export default {
           
           if (activeLayers.length > 0) {
             const group = L.featureGroup(activeLayers);
-<<<<<<< HEAD
-            map.value.fitBounds(group.getBounds());
-          }
-=======
             map.fitBounds(group.getBounds());
->>>>>>> origin/main
         }
       } catch (error) {
         console.error('加载预警分析图层失败:', error);
@@ -1533,14 +1144,6 @@ export default {
         if (!mapLayers[layerName]) {
           loadWarningLayers();
         } else {
-<<<<<<< HEAD
-          // 图层已存在，添加到地图
-          mapLayers[layerName].addTo(map.value);
-        }
-      } else if (mapLayers[layerName]) {
-        // 图层已被禁用且已加载，从地图移除
-        map.value.removeLayer(mapLayers[layerName]);
-=======
           // 图层已存在，添加到地图并设置正确的层级顺序
           mapLayers[layerName].addTo(map);
           
@@ -1592,7 +1195,6 @@ export default {
             }
           });
         }
->>>>>>> origin/main
       }
     };
 
@@ -1629,19 +1231,6 @@ export default {
     const toggleWarningDetail = () => {
       showWarningDetail.value = !showWarningDetail.value;
     };
-<<<<<<< HEAD
-    
-    // 切换预警分析子菜单
-    const toggleWarningMenu = (event) => {
-      showWarningSubmenu.value = !showWarningSubmenu.value;
-      event.stopPropagation(); // 阻止事件冒泡
-      
-      // 如果展开子菜单，同时激活预警分析功能
-      if (showWarningSubmenu.value) {
-        activateFeature('warning');
-      }
-    };
-=======
 
     // 关闭分析模态框
     const closeAnalysisModal = () => {
@@ -2508,7 +2097,6 @@ export default {
     };
     
       
->>>>>>> origin/main
     
     // 水库淹没模拟相关方法
     const runFloodSimulation = () => {
@@ -2591,19 +2179,9 @@ export default {
       }
     };
     
-<<<<<<< HEAD
-    // 打开水位预案弹窗
-    const showWaterLevelPlanModal = ref(false);
-    const waterLevelPlanType = ref('normal'); // 'normal', 'warning', 'danger'
-    
-    const openWaterLevelPlan = () => {
-      showWaterLevelPlanModal.value = true;
-    };
-=======
 
     
     
->>>>>>> origin/main
     
     const initFloodCharts = async () => {
       // 深度分布图表
@@ -2717,54 +2295,7 @@ export default {
       }
     };
 
-<<<<<<< HEAD
-    // 独立作用域：污染物扩散模拟相关
-    const pollutionScope = (() => {
-      const showLakeSimulation = ref(false)
-      const lakeSimulationRef = ref(null)
-      const baseWaterAreasLayer = ref(null)
-      // 加载Beijing-GeoJson/北京市_水系面数据.json
-      const loadBaseWaterAreasLayer = async () => {
-        const response = await fetch('/Beijing-GeoJson/北京市_水系面数据.json')
-        const data = await response.json()
-        baseWaterAreasLayer.value = L.geoJSON(data)
-      }
-      loadBaseWaterAreasLayer()
-      // 图层状态
-      const layers = reactive({
-        districts: true,
-        waterLines: true,
-        waterAreas: true,
-        reservoirs: true,
-        settlements: false
-      })
-      // 切换图层显示
-      const toggleLayer = (layerType) => {
-        const layer = mapLayers[layerType]
-        if (layer) {
-          if (layers[layerType]) {
-            layer.addTo(map.value)
-            if (layerType === 'waterAreas') {
-              layer.bringToFront()
-            }
-          } else {
-            map.value.removeLayer(layer)
-          }
-        }
-      }
-      return {
-        showLakeSimulation,
-        layers,
-        toggleLayer,
-        lakeSimulationRef,
-        baseWaterAreasLayer
-      }
-    })();
-
-    // 修改activateFeature方法，支持污染物扩散模拟
-=======
     // 激活功能
->>>>>>> origin/main
     const activateFeature = (feature) => {
       activeFeature.value = feature;
       // 关闭所有详情
@@ -2772,36 +2303,12 @@ export default {
       showReservoirDetail.value = false;
       showMonitoringDetail.value = false;
       showWarningDetail.value = false;
-<<<<<<< HEAD
-      // 切换到预警分析相关功能时，加载地图图层
-=======
       
       // 如果是预警分析相关功能，加载地图图层
->>>>>>> origin/main
       if (feature === 'warning' || feature === 'waterLevelWarning' || feature === 'environmentWarning') {
         // 清除现有图层
         Object.values(mapLayers).forEach(layer => {
           if (layer) {
-<<<<<<< HEAD
-            map.value.removeLayer(layer);
-          }
-        });
-        // 重新加载图层
-        loadWarningLayers();
-      }
-      // 切换到污染物扩散模拟时，清除预警分析图层（如有必要）
-      if (feature === 'pollution') {
-        Object.values(mapLayers).forEach(layer => {
-          if (layer) {
-            map.value.removeLayer(layer);
-          }
-        });
-        pollutionScope.showLakeSimulation.value = true;
-      } else {
-        pollutionScope.showLakeSimulation.value = false;
-      }
-    }
-=======
             map.removeLayer(layer);
           }
         });
@@ -2810,17 +2317,13 @@ export default {
         loadWarningLayers();
       }
     };
->>>>>>> origin/main
 
     onMounted(() => {
       // 确保地图容器已渲染后再初始化地图
       setTimeout(() => {
         initMap();
-<<<<<<< HEAD
-=======
         // 自动激活水位预警功能
         activateFeature('waterLevelWarning');
->>>>>>> origin/main
       }, 100);
     })
     
@@ -2835,13 +2338,8 @@ export default {
 
     onUnmounted(() => {
       // 组件卸载时移除地图以避免内存泄漏
-<<<<<<< HEAD
-      if (map.value) {
-        map.value.remove();
-=======
       if (map) {
         map.remove();
->>>>>>> origin/main
       }
       if (reservoirLayer) {
         reservoirLayer.remove();
@@ -2852,8 +2350,6 @@ export default {
           layer.remove();
         }
       });
-<<<<<<< HEAD
-=======
       // 清除区县标注
       districtLabels.forEach(label => {
         if (label) {
@@ -2861,7 +2357,6 @@ export default {
         }
       });
       districtLabels = [];
->>>>>>> origin/main
       if (chartInstance) {
         chartInstance.dispose();
         chartInstance = null;
@@ -2886,17 +2381,10 @@ export default {
       showWarningDetail,
       toggleWarningDetail,
       // 预警分析子菜单
-<<<<<<< HEAD
-      showWarningSubmenu,
-      toggleWarningMenu,
-      // 预警分析相关
-      warningLayers,
-=======
 
       // 预警分析相关
       warningLayers,
       layerColors,
->>>>>>> origin/main
       toggleWarningLayer,
       // 水库淹没模拟相关
       floodParams,
@@ -2909,16 +2397,6 @@ export default {
       resetFloodParams,
       getImpactLevelClass,
       getImpactLevelText,
-<<<<<<< HEAD
-      // 水位预案相关
-      showWaterLevelPlanModal,
-      waterLevelPlanType,
-      openWaterLevelPlan,
-      // 独立作用域：污染物扩散模拟相关
-      pollutionScope,
-      map,
-      mapLayers,
-=======
       // 分析模态框相关
       showAnalysisModal,
       analysisData,
@@ -2933,7 +2411,6 @@ export default {
       closePlanModal,
       startPlanDrag
 
->>>>>>> origin/main
     }
   }
 }
@@ -2960,94 +2437,6 @@ export default {
   background-color: #ffffff; /* 确保地图容器背景也是白色 */
 }
 
-<<<<<<< HEAD
-/* 左侧功能栏样式 */
-.left-sidebar {
-  position: absolute;
-  top: 20px;
-  left: 20px;
-  width: 180px;
-  background-color: rgba(255, 255, 255, 0.9);
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
-  padding: 15px;
-  z-index: 1000;
-}
-
-/* 缩放控件微调到功能栏右侧 */
-:deep(.leaflet-top.leaflet-left .leaflet-control-zoom) {
-  margin-left: 210px !important; /* 180px宽度+30px间距 */
-  margin-top: 30px !important;
-  z-index: 1100;
-}
-
-.sidebar-title {
-  font-size: 16px;
-  font-weight: bold;
-  margin-top: 0;
-  margin-bottom: 15px;
-  text-align: center;
-  color: #333;
-  padding-bottom: 10px;
-  border-bottom: 1px solid #eee;
-}
-
-.sidebar-menu {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-}
-
-.menu-item {
-  display: flex;
-  align-items: center;
-  cursor: pointer;
-  padding: 10px;
-  border-radius: 6px;
-  transition: background-color 0.3s;
-}
-
-.menu-item:hover {
-  background-color: rgba(0, 0, 0, 0.05);
-}
-
-.menu-icon {
-  margin-right: 10px;
-  width: 24px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.menu-text {
-  font-size: 14px;
-  color: #333;
-}
-
-/* 功能图标样式 */
-.feature-icon {
-  display: block;
-  width: 20px;
-  height: 20px;
-  background-size: contain;
-  background-position: center;
-  background-repeat: no-repeat;
-}
-
-.warning-icon {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23f44336'%3E%3Cpath d='M12 5.99L19.53 19H4.47L12 5.99M12 2L1 21h22L12 2zm1 14h-2v2h2v-2zm0-6h-2v4h2v-4z'/%3E%3C/svg%3E");
-}
-
-.flood-icon {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%232196f3'%3E%3Cpath d='M12,3L2,12h3v8h14v-8h3L12,3z M12,16c-1.1,0-2-0.9-2-2c0-1.1,2-4,2-4s2,2.9,2,4C14,15.1,13.1,16,12,16z'/%3E%3C/svg%3E");
-}
-
-.pollution-icon {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%234caf50'%3E%3Cpath d='M19.35,10.04C18.67,6.59,15.64,4,12,4C9.11,4,6.6,5.64,5.35,8.04C2.34,8.36,0,10.91,0,14c0,3.31,2.69,6,6,6h13 c2.76,0,5-2.24,5-5C24,12.36,21.95,10.22,19.35,10.04z'/%3E%3C/svg%3E");
-}
-
-=======
 /* 缩放控件位置调整 */
 :deep(.leaflet-top.leaflet-left .leaflet-control-zoom) {
   margin-left: 20px !important;
@@ -3055,7 +2444,6 @@ export default {
   z-index: 1100;
 }
 
->>>>>>> origin/main
 /* 右侧预警分析状态栏样式 */
 .right-statusbar {
   position: absolute;
@@ -3586,38 +2974,6 @@ export default {
   color: #333;
 } */
 
-<<<<<<< HEAD
-/* 新的水平图层控制面板样式 */
-.layer-controls-horizontal {
-  display: flex;
-  position: absolute;
-  top: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  background-color: rgba(255, 255, 255, 0.9);
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
-  padding: 10px 20px;
-  z-index: 1000;
-  gap: 20px;
-}
-
-.layer-item {
-  display: flex;
-  align-items: center;
-  margin-bottom: 0;
-  white-space: nowrap;
-}
-
-.layer-item input[type="checkbox"] {
-  margin-right: 8px;
-}
-
-.layer-item label {
-  font-size: 14px;
-  color: #333;
-  cursor: pointer;
-=======
 /* 图层控制面板样式（与地图编辑页面保持一致） */
 .control-panel {
   position: absolute;
@@ -3662,7 +3018,6 @@ export default {
 
 .color-preview.point-preview {
   border-radius: 50%;
->>>>>>> origin/main
 }
 
 /* 区县名称标注样式 */
@@ -3672,31 +3027,6 @@ export default {
 }
 
 :deep(.district-label div) {
-<<<<<<< HEAD
-  color: #000;
-  font-weight: normal;
-  font-size: 14px;
-  text-align: center;
-  white-space: nowrap;
-  pointer-events: none;
-}
-
-/* 菜单箭头图标 */
-.menu-arrow {
-  margin-left: auto;
-  width: 0;
-  height: 0;
-  border-left: 5px solid transparent;
-  border-right: 5px solid transparent;
-  border-top: 5px solid #333;
-  transition: transform 0.3s ease;
-}
-
-.menu-arrow-expanded {
-  transform: rotate(180deg);
-}
-
-=======
   color: #1976D2;
   font-weight: bold;
   font-size: 12px;
@@ -4715,7 +4045,6 @@ export default {
 
 /* 移除动画关键帧，减少CSS计算 */
 
->>>>>>> origin/main
 /* 子菜单样式 */
 .submenu {
   margin-left: 20px;
@@ -4764,207 +4093,4 @@ export default {
   color: #555;
 }
 
-<<<<<<< HEAD
-/* 水位预案按钮样式 */
-.water-level-plan-button {
-  position: absolute;
-  top: 20px;
-  right: 20px;
-  background-color: #2196F3;
-  color: white;
-  border-radius: 4px;
-  padding: 10px 15px;
-  display: flex;
-  align-items: center;
-  cursor: pointer;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-  transition: background-color 0.3s;
-  z-index: 1000;
-}
-
-.water-level-plan-button:hover {
-  background-color: #1976D2;
-}
-
-.plan-icon {
-  display: inline-block;
-  width: 18px;
-  height: 18px;
-  margin-right: 8px;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ffffff'%3E%3Cpath d='M14,2H6C4.9,2 4,2.9 4,4v16c0,1.1 0.9,2 2,2h12c1.1,0 2-0.9 2-2V8L14,2zM12,10v3c0,0.55-0.45,1-1,1H9v3H7v-7h4V10zM13,9V3.5L18.5,9H13z'/%3E%3C/svg%3E");
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: center;
-}
-
-.plan-text {
-  font-size: 14px;
-  font-weight: 500;
-}
-
-/* 水位预案弹窗样式 */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 2000;
-}
-
-.water-level-plan-modal {
-  background-color: white;
-  border-radius: 8px;
-  width: 700px;
-  max-width: 90%;
-  max-height: 90vh;
-  overflow-y: auto;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 15px 20px;
-  border-bottom: 1px solid #e0e6ed;
-}
-
-.modal-header h3 {
-  margin: 0;
-  color: #1976D2;
-  font-size: 18px;
-}
-
-.close-button {
-  background: transparent;
-  border: none;
-  font-size: 24px;
-  cursor: pointer;
-  color: #666;
-  padding: 0 5px;
-}
-
-.modal-body {
-  padding: 20px;
-}
-
-.plan-tabs {
-  display: flex;
-  border-bottom: 1px solid #e0e6ed;
-  margin-bottom: 20px;
-}
-
-.plan-tab {
-  padding: 10px 20px;
-  cursor: pointer;
-  font-weight: 500;
-  border-bottom: 2px solid transparent;
-  transition: all 0.3s;
-}
-
-.plan-tab:hover {
-  color: #1976D2;
-}
-
-.plan-tab.active {
-  color: #1976D2;
-  border-bottom-color: #1976D2;
-}
-
-.plan-content h4 {
-  margin-top: 0;
-  margin-bottom: 15px;
-  color: #333;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.water-level-value {
-  font-size: 14px;
-  background-color: #E8F5E9;
-  color: #4CAF50;
-  padding: 4px 10px;
-  border-radius: 4px;
-}
-
-.water-level-value.warning {
-  background-color: #FFF3E0;
-  color: #FF9800;
-}
-
-.water-level-value.danger {
-  background-color: #FFEBEE;
-  color: #F44336;
-}
-
-.plan-list {
-  list-style-type: none;
-  padding: 0;
-  margin: 0 0 20px 0;
-}
-
-.plan-list li {
-  padding: 8px 0;
-  border-bottom: 1px solid #f0f0f0;
-  color: #555;
-}
-
-.plan-list li:last-child {
-  border-bottom: none;
-}
-
-.plan-list.warning li {
-  padding: 10px 0;
-}
-
-.plan-list.danger li {
-  padding: 10px 0;
-}
-
-.plan-remark {
-  background-color: #F5F5F5;
-  padding: 15px;
-  border-radius: 4px;
-  color: #666;
-  font-size: 14px;
-}
-
-.plan-actions {
-  margin-top: 20px;
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.plan-action-btn {
-  background-color: #2196F3;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  padding: 10px 15px;
-  cursor: pointer;
-  font-weight: 500;
-  transition: background-color 0.3s;
-}
-
-.plan-action-btn:hover {
-  background-color: #1976D2;
-}
-
-.plan-action-btn.danger {
-  background-color: #F44336;
-}
-
-.plan-action-btn.danger:hover {
-  background-color: #D32F2F;
-}
-=======
-
->>>>>>> origin/main
 </style> 

@@ -19,39 +19,16 @@
             <input type="checkbox" v-model="layers.districts" @change="toggleLayer('districts')">
             区县边界
           </label>
-<<<<<<< HEAD
-=======
           <div class="layer-color-control">
             <div class="color-preview" :style="{ backgroundColor: layerColors.districts }" @click="showColorPicker('districts')"></div>
             <input type="color" v-model="layerColors.districts" @change="updateLayerColor('districts')" class="color-input" data-layer="districts" />
           </div>
->>>>>>> origin/main
         </div>
         <div class="layer-control">
           <label>
             <input type="checkbox" v-model="layers.waterLines" @change="toggleLayer('waterLines')">
             水系线数据
           </label>
-<<<<<<< HEAD
-        </div>
-        <div class="layer-control">
-          <label>
-            <input type="checkbox" v-model="layers.waterAreas" @change="toggleLayer('waterAreas')">
-            水系面数据
-          </label>
-        </div>
-        <div class="layer-control">
-          <label>
-            <input type="checkbox" v-model="layers.reservoirs" @change="toggleLayer('reservoirs')">
-            水库(面)
-          </label>
-        </div>
-        <div class="layer-control">
-          <label>
-            <input type="checkbox" v-model="layers.reservoirPoints" @change="toggleLayer('reservoirPoints')">
-            水库(点)
-          </label>
-=======
           <div class="layer-color-control">
             <div class="color-preview" :style="{ backgroundColor: layerColors.waterLines }" @click="showColorPicker('waterLines')"></div>
             <input type="color" v-model="layerColors.waterLines" @change="updateLayerColor('waterLines')" class="color-input" data-layer="waterLines" />
@@ -76,20 +53,16 @@
             <div class="color-preview point-preview" :style="{ backgroundColor: layerColors.monitoringPoints }" @click="showColorPicker('monitoringPoints')"></div>
             <input type="color" v-model="layerColors.monitoringPoints" @change="updateLayerColor('monitoringPoints')" class="color-input" data-layer="monitoringPoints" />
           </div>
->>>>>>> origin/main
         </div>
         <div class="layer-control">
           <label>
             <input type="checkbox" v-model="layers.settlements" @change="toggleLayer('settlements')">
             居民地地名
           </label>
-<<<<<<< HEAD
-=======
           <div class="layer-color-control">
             <div class="color-preview point-preview" :style="{ backgroundColor: layerColors.settlements }" @click="showColorPicker('settlements')"></div>
             <input type="color" v-model="layerColors.settlements" @change="updateLayerColor('settlements')" class="color-input" data-layer="settlements" />
           </div>
->>>>>>> origin/main
         </div>
       </div>
       <!-- 水库图片控制面板 -->
@@ -97,9 +70,6 @@
         <span class="img-panel-close" @click="showReservoirImgPanel = false">×</span>
         <img :src="reservoirImgUrl" :alt="reservoirImgName" class="reservoir-img-main" onerror="this.style.display='none'" />
         <div class="reservoir-img-title">{{ reservoirImgName }}</div>
-<<<<<<< HEAD
-      </div>
-=======
         
         <!-- 水库详细信息 -->
         <div v-if="reservoirDetails[reservoirImgName]" class="reservoir-details">
@@ -274,7 +244,6 @@
         </div>
       </div>
       
->>>>>>> origin/main
       <!-- 自定义工具栏 -->
       <div class="custom-toolbar">
         <img src="/icons/打开mxd.png" alt="打开mxd" title="打开mxd" @click="openMxdFile" />
@@ -310,11 +279,7 @@
             v-model="searchText"
             @keyup.enter="handleSearch"
             class="search-input"
-<<<<<<< HEAD
-            placeholder="请输入水库名称，如：怀柔水库"
-=======
             placeholder="请输入监测点名称，如：白河堡水库"
->>>>>>> origin/main
             autofocus
           />
           <button class="search-btn" @click="handleSearch">查询</button>
@@ -410,35 +375,6 @@
           <div class="render-modal-body">
             <div class="render-row">
               <label>字段：</label>
-<<<<<<< HEAD
-              <select v-model="renderField" class="render-select">
-                <option v-for="f in reservoirPointFields" :key="f" :value="f">{{ f }}</option>
-              </select>
-            </div>
-            <div class="render-row">
-              <label>条件：</label>
-              <select v-model="renderOp" class="render-select">
-                <option value=">">大于</option>
-                <option value="<">小于</option>
-                <option value=">=">大于等于</option>
-                <option value="<=">小于等于</option>
-                <option value="==">等于</option>
-                <option value="range">区间</option>
-              </select>
-              <input v-model="renderValue1" class="render-input" placeholder="数值" type="number" />
-              <span v-if="renderOp==='range'"> - </span>
-              <input v-if="renderOp==='range'" v-model="renderValue2" class="render-input" placeholder="数值" type="number" />
-            </div>
-            <div class="render-row">
-              <label>颜色：</label>
-              <input v-model="renderColor" class="render-color" type="color" />
-              <span class="render-color-label">满足条件</span>
-              <input v-model="renderElseColor" class="render-color" type="color" />
-              <span class="render-color-label">不满足</span>
-            </div>
-            <div class="render-row">
-              <button class="render-btn" @click="handleRender">渲染</button>
-=======
               <select v-model="renderField" class="render-select" @change="updateGradeRanges">
                 <option v-for="f in monitoringPointFields" :key="f" :value="f">{{ f }}</option>
               </select>
@@ -489,7 +425,6 @@
             <div class="render-row">
               <button class="render-btn" @click="handleGradeRender">分级渲染</button>
               <button class="render-reset-btn" @click="resetRender">重置</button>
->>>>>>> origin/main
             </div>
             <div v-if="renderError" class="render-error">{{ renderError }}</div>
           </div>
@@ -512,12 +447,6 @@ const loading = ref(true)
 const layers = reactive({
   districts: true,
   waterLines: true,
-<<<<<<< HEAD
-  waterAreas: true,
-  reservoirs: true,
-  settlements: true,
-  reservoirPoints: false
-=======
   beijingReservoirs: true,
   settlements: false, // 默认不打开居民地图层
   monitoringPoints: true // 默认打开监测点图层
@@ -530,23 +459,15 @@ const layerColors = reactive({
   beijingReservoirs: '#26C6DA',
   settlements: '#FFF176',
   monitoringPoints: '#FF5722'
->>>>>>> origin/main
 })
 
 // 图层对象
 const layerObjects = reactive({
   districts: null,
   waterLines: null,
-<<<<<<< HEAD
-  waterAreas: null,
-  reservoirs: null,
-  settlements: null,
-  reservoirPoints: null
-=======
   beijingReservoirs: null,
   settlements: null,
   monitoringPoints: null
->>>>>>> origin/main
 })
 
 // 初始化地图
@@ -555,8 +476,6 @@ const initMap = () => {
     zoomControl: false,
     attributionControl: false
   }).setView([39.9042, 116.4074], 10)
-<<<<<<< HEAD
-=======
   
   // 添加地图事件监听器
   map.value.on('moveend', () => {
@@ -571,7 +490,6 @@ const initMap = () => {
   // 设置地图事件监听器
   setupMapEventListeners()
   
->>>>>>> origin/main
   // 不加载任何在线底图
 }
 
@@ -580,16 +498,9 @@ const loadGeoJSONData = async () => {
   const dataFiles = {
     districts: '/Beijing-GeoJson-Tzy/北京区县界.json',
     waterLines: '/Beijing-GeoJson-Tzy/北京市_水系线数据.json',
-<<<<<<< HEAD
-    waterAreas: '/Beijing-GeoJson-Tzy/北京市_水系面数据.geojson',
-    reservoirs: '/Beijing-GeoJson-Tzy/水库面数据.geojson', // 优化：确保水库面数据路径正确
-    settlements: '/Beijing-GeoJson-Tzy/居民地地名.json',
-    reservoirPoints: '/Beijing-GeoJson-Tzy/水库点数据.geojson' // 优化：确保水库点数据路径正确
-=======
     beijingReservoirs: '/Beijing-GeoJson-Tzy/北京市水库面.geojson',
     settlements: '/Beijing-GeoJson-Tzy/居民地地名.json',
     monitoringPoints: '/Beijing-GeoJson-Tzy/监测点.geojson'
->>>>>>> origin/main
   }
   for (const [key, filePath] of Object.entries(dataFiles)) {
     try {
@@ -597,28 +508,16 @@ const loadGeoJSONData = async () => {
       const data = await response.json()
       // 优化：区分点和面类型
       let layer
-<<<<<<< HEAD
-      if (key === 'reservoirPoints') {
-=======
       if (key === 'monitoringPoints') {
->>>>>>> origin/main
         layer = L.geoJSON(data, {
           pointToLayer: (feature, latlng) => L.circleMarker(latlng, getLayerStyle(key)),
           onEachFeature: (feature, lyr) => {
             if (feature.properties) {
               lyr.bindPopup(getPopupContent(key, feature.properties))
-<<<<<<< HEAD
-              // 移除点击时弹图片面板的逻辑
-            }
-          }
-        })
-      } else if (key === 'reservoirs') {
-=======
             }
           }
         })
       } else if (key === 'beijingReservoirs') {
->>>>>>> origin/main
         layer = L.geoJSON(data, {
           style: getLayerStyle(key),
           onEachFeature: (feature, lyr) => {
@@ -649,11 +548,7 @@ const loadGeoJSONData = async () => {
       layerObjects[key] = layer
       if (layers[key]) {
         layer.addTo(map.value)
-<<<<<<< HEAD
-        if (key === 'waterAreas' || key === 'reservoirs') {
-=======
         if (key === 'beijingReservoirs') {
->>>>>>> origin/main
           layer.bringToFront()
         }
       }
@@ -668,39 +563,14 @@ const loadGeoJSONData = async () => {
 const getLayerStyle = (layerType) => {
   const styles = {
     districts: {
-<<<<<<< HEAD
-      fillColor: '#b3e5fc', // 淡蓝色
-      weight: 2.5,
-      opacity: 0.8,
-      color: '#0288D1', // 蓝色边线
-=======
       fillColor: layerColors.districts,
       weight: 2.5,
       opacity: 0.8,
       color: layerColors.districts,
->>>>>>> origin/main
       fillOpacity: 0.5,
       dashArray: '5, 8'
     },
     waterLines: {
-<<<<<<< HEAD
-      color: '#64B5F6',
-      weight: 2.5,
-      opacity: 0.9
-    },
-    waterAreas: {
-      fillColor: '#29B6F6',
-      weight: 1.5,
-      opacity: 0.9,
-      color: '#0288D1',
-      fillOpacity: 0.7
-    },
-    reservoirs: {
-      fillColor: '#26C6DA',
-      weight: 1.5,
-      opacity: 0.9,
-      color: '#00ACC1',
-=======
       color: layerColors.waterLines,
       weight: 2.5,
       opacity: 0.9
@@ -710,30 +580,19 @@ const getLayerStyle = (layerType) => {
       weight: 1.5,
       opacity: 0.9,
       color: layerColors.beijingReservoirs,
->>>>>>> origin/main
       fillOpacity: 0.8
     },
     settlements: {
       radius: 6,
-<<<<<<< HEAD
-      fillColor: '#FFF176',
-=======
       fillColor: layerColors.settlements,
->>>>>>> origin/main
       color: '#ffffff',
       weight: 1.5,
       opacity: 1,
       fillOpacity: 0.9
     },
-<<<<<<< HEAD
-    reservoirPoints: {
-      radius: 7,
-      fillColor: '#1976D2',
-=======
     monitoringPoints: {
       radius: 8,
       fillColor: layerColors.monitoringPoints,
->>>>>>> origin/main
       color: '#fff',
       weight: 2,
       opacity: 1,
@@ -749,23 +608,7 @@ const getPopupContent = (layerType, properties) => {
   for (const [key, value] of Object.entries(properties)) {
     html += `<div><strong>${key}:</strong> ${value !== null && value !== undefined ? value : '未知'}</div>`
   }
-<<<<<<< HEAD
-  // 仅水库点/面显示图片
-  if (layerType === 'reservoirPoints' || layerType === 'reservoirs') {
-    const name = properties.库名 || properties.name || properties.NAME
-    if (name) {
-      html += `
-        <div class="popup-img-block">
-          <img class='popup-reservoir-img' src="/reservoir-images/${name}.jpg" alt="${name}" onerror="this.style.display='none'" />
-          <div class='popup-img-title'>${name}</div>
-          <div class='popup-img-divider'></div>
-        </div>
-      `
-    }
-  }
-=======
   // 删除水库点/面弹窗中的图片显示
->>>>>>> origin/main
   html += '</div>'
   return html
 }
@@ -789,9 +632,6 @@ const toggleLayer = (layerType) => {
   }
 }
 
-<<<<<<< HEAD
-// 新增：查询和渲染工具激活方法
-=======
 // 地图工具激活方法
 const activateZoomIn = () => {
   activeMapTool.value = 'zoomIn'
@@ -982,7 +822,6 @@ const getUpdatedLayerStyle = (layerType) => {
 }
 
 // 查询和渲染工具激活方法
->>>>>>> origin/main
 const activateQuery = () => {
   activeMapTool.value = 'query'
 }
@@ -996,18 +835,6 @@ const activeMapTool = ref('')
 const searchText = ref('')
 const searchError = ref('')
 
-<<<<<<< HEAD
-// 查询并定位水库点（成功时显示图片面板）
-const handleSearch = () => {
-  searchError.value = ''
-  if (!searchText.value.trim()) {
-    searchError.value = '请输入水库名称'
-    return
-  }
-  const layer = layerObjects.reservoirPoints
-  if (!layer) {
-    searchError.value = '水库点图层未加载'
-=======
 // 查询并定位监测点
 const handleSearch = () => {
   searchError.value = ''
@@ -1018,17 +845,12 @@ const handleSearch = () => {
   const layer = layerObjects.monitoringPoints
   if (!layer) {
     searchError.value = '监测点图层未加载'
->>>>>>> origin/main
     return
   }
   let found = false
   layer.eachLayer(l => {
     const props = l.feature && l.feature.properties
-<<<<<<< HEAD
-    if (props && (props.库名 === searchText.value.trim() || props.name === searchText.value.trim() || props.NAME === searchText.value.trim())) {
-=======
     if (props && (props.name === searchText.value.trim() || props.NAME === searchText.value.trim())) {
->>>>>>> origin/main
       found = true
       map.value.setView(l.getLatLng(), 14, { animate: true })
       l.openPopup()
@@ -1038,15 +860,6 @@ const handleSearch = () => {
         setTimeout(() => layer.resetStyle && layer.resetStyle(l), 2000)
       }
       // 查询到后显示图片面板
-<<<<<<< HEAD
-      const name = props.库名 || props.name || props.NAME
-      if (name) {
-        reservoirImgUrl.value = `/reservoir-images/${name}.jpg`
-        reservoirImgName.value = name
-        showReservoirImgPanel.value = true
-      } else {
-        showReservoirImgPanel.value = false
-=======
       const name = props.name || props.NAME
       if (name) {
         // 确保图片路径正确
@@ -1063,16 +876,11 @@ const handleSearch = () => {
       } else {
         showReservoirImgPanel.value = false
         showFloodHistoryPanel.value = false
->>>>>>> origin/main
       }
     }
   })
   if (!found) {
-<<<<<<< HEAD
-    searchError.value = '未找到对应水库点'
-=======
     searchError.value = '未找到对应监测点'
->>>>>>> origin/main
     showReservoirImgPanel.value = false
   }
 }
@@ -1080,26 +888,6 @@ const handleSearch = () => {
 const showReservoirImgPanel = ref(false)
 const reservoirImgUrl = ref('')
 const reservoirImgName = ref('')
-<<<<<<< HEAD
-
-// 渲染对话框相关
-const reservoirPointFields = ref([
-  '库名','多年平均水位','多年平均蓄水量','多年日平均入库流量','多年日平均出库流量','总库容','汛限水位'
-])
-const renderField = ref('多年平均水位')
-const renderOp = ref('>')
-const renderValue1 = ref('')
-const renderValue2 = ref('')
-const renderColor = ref('#ff4d4f')
-const renderElseColor = ref('#1976d2')
-const renderError = ref('')
-
-const handleRender = () => {
-  renderError.value = ''
-  const layer = layerObjects.reservoirPoints
-  if (!layer) {
-    renderError.value = '水库点图层未加载'
-=======
 const showFloodHistoryPanel = ref(false)
 
 // 历史视图相关
@@ -1371,42 +1159,12 @@ const handleGradeRender = () => {
   const layer = layerObjects.monitoringPoints
   if (!layer) {
     renderError.value = '监测点图层未加载'
->>>>>>> origin/main
     return
   }
   if (!renderField.value) {
     renderError.value = '请选择字段'
     return
   }
-<<<<<<< HEAD
-  let v1 = parseFloat(renderValue1.value)
-  let v2 = parseFloat(renderValue2.value)
-  if (renderOp.value === 'range' && (isNaN(v1) || isNaN(v2))) {
-    renderError.value = '请输入区间数值'
-    return
-  }
-  if (renderOp.value !== 'range' && isNaN(v1)) {
-    renderError.value = '请输入数值'
-    return
-  }
-  layer.eachLayer(l => {
-    const props = l.feature && l.feature.properties
-    let val = parseFloat(props[renderField.value])
-    let match = false
-    if (!isNaN(val)) {
-      switch (renderOp.value) {
-        case '>': match = val > v1; break
-        case '<': match = val < v1; break
-        case '>=': match = val >= v1; break
-        case '<=': match = val <= v1; break
-        case '==': match = val === v1; break
-        case 'range': match = val >= Math.min(v1,v2) && val <= Math.max(v1,v2); break
-      }
-    }
-    l.setStyle({
-      fillColor: match ? renderColor.value : renderElseColor.value,
-      color: match ? renderColor.value : renderElseColor.value,
-=======
   
   // 验证输入
   const ranges = [gradeRanges.red, gradeRanges.yellow, gradeRanges.green]
@@ -1451,7 +1209,6 @@ const handleGradeRender = () => {
     l.setStyle({
       fillColor: color,
       color: color,
->>>>>>> origin/main
       fillOpacity: 0.95,
       opacity: 1,
       weight: 2
@@ -1459,11 +1216,6 @@ const handleGradeRender = () => {
   })
 }
 
-<<<<<<< HEAD
-onMounted(() => {
-  initMap()
-  loadGeoJSONData()
-=======
 // 重置渲染
 const resetRender = () => {
   const layer = layerObjects.monitoringPoints
@@ -1476,7 +1228,6 @@ onMounted(() => {
   initMap()
   loadGeoJSONData()
   updateGradeRanges() // 初始化分级区间
->>>>>>> origin/main
 })
 </script>
 
@@ -1493,28 +1244,13 @@ onMounted(() => {
   flex: 1;
   overflow: hidden;
   position: relative;
-<<<<<<< HEAD
-  background-color: #f5f5f5; /* 替换原来的背景色 */
-=======
   background-color: #ffffff; /* 设置为白色背景 */
->>>>>>> origin/main
 }
 
 .editor-map {
   width: 100%;
   height: calc(100vh - 72px);
   z-index: 1; /* 确保地图在最底层 */
-<<<<<<< HEAD
-}
-
-/* 移除可能导致紫色方块的背景样式 */
-body {
-  background: #ffffff; /* 替换渐变背景 */
-}
-
-#app {
-  background: #ffffff; /* 确保app容器没有背景 */
-=======
   background-color: #ffffff; /* 确保地图容器背景为白色 */
 }
 
@@ -1529,7 +1265,6 @@ body {
 
 .map-editor-container {
   background: #ffffff !important;
->>>>>>> origin/main
 }
 
 .control-panel {
@@ -1541,20 +1276,13 @@ body {
   box-shadow: 0 4px 16px rgba(0,0,0,0.10);
   padding: 20px 28px 20px 24px;
   z-index: 1000;
-<<<<<<< HEAD
-  min-width: 180px;
-  max-width: 320px;
-=======
   min-width: 220px;
   max-width: 360px;
->>>>>>> origin/main
   width: auto;
   font-size: 16px;
 }
 .layer-control {
   margin-bottom: 8px;
-<<<<<<< HEAD
-=======
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -1592,7 +1320,6 @@ body {
   opacity: 0;
   position: absolute;
   pointer-events: none;
->>>>>>> origin/main
 }
 .loading {
   position: absolute;
@@ -2060,12 +1787,6 @@ body {
   font-size: 16px;
   color: #222;
   font-weight: 500;
-<<<<<<< HEAD
-  margin-bottom: 2px;
-  letter-spacing: 1px;
-  text-align: center;
-}
-=======
   margin-bottom: 8px;
   letter-spacing: 1px;
   text-align: center;
@@ -2109,7 +1830,6 @@ body {
   flex: 1;
   margin-left: 8px;
 }
->>>>>>> origin/main
 .render-modal {
   position: absolute;
   top: 60px;
@@ -2206,8 +1926,6 @@ body {
   margin-top: 8px;
   font-size: 14px;
 }
-<<<<<<< HEAD
-=======
 
 /* 分级渲染样式 */
 .grade-settings {
@@ -2350,5 +2068,4 @@ body {
   margin: 0;
   text-align: justify;
 }
->>>>>>> origin/main
 </style> 

@@ -5,95 +5,54 @@
     <div class="map-container">
       <div id="map" style="width: 100%; height: 100%;"></div>
       
-<<<<<<< HEAD
-      <!-- 控制面板 -->
-      <div class="control-panel">
-=======
       <!-- 左侧图层控制面板 -->
       <div class="layer-control-panel">
->>>>>>> origin/main
         <h3>图层控制</h3>
         <div class="layer-control">
           <label>
             <input type="checkbox" v-model="layers.districts" @change="toggleLayer('districts')">
             区县边界
           </label>
-<<<<<<< HEAD
-=======
           <div class="layer-color-control">
             <div class="color-preview" :style="{ backgroundColor: layerColors.districts }" @click="showColorPicker('districts')"></div>
             <input type="color" v-model="layerColors.districts" @change="updateLayerColor('districts')" class="color-input" data-layer="districts" />
           </div>
->>>>>>> origin/main
         </div>
         <div class="layer-control">
           <label>
             <input type="checkbox" v-model="layers.waterLines" @change="toggleLayer('waterLines')">
             水系线数据
           </label>
-<<<<<<< HEAD
-=======
           <div class="layer-color-control">
             <div class="color-preview" :style="{ backgroundColor: layerColors.waterLines }" @click="showColorPicker('waterLines')"></div>
             <input type="color" v-model="layerColors.waterLines" @change="updateLayerColor('waterLines')" class="color-input" data-layer="waterLines" />
           </div>
->>>>>>> origin/main
         </div>
         <div class="layer-control">
           <label>
             <input type="checkbox" v-model="layers.waterAreas" @change="toggleLayer('waterAreas')">
             水系面数据
           </label>
-<<<<<<< HEAD
-=======
           <div class="layer-color-control">
             <div class="color-preview" :style="{ backgroundColor: layerColors.waterAreas }" @click="showColorPicker('waterAreas')"></div>
             <input type="color" v-model="layerColors.waterAreas" @change="updateLayerColor('waterAreas')" class="color-input" data-layer="waterAreas" />
           </div>
->>>>>>> origin/main
         </div>
         <div class="layer-control">
           <label>
             <input type="checkbox" v-model="layers.reservoirs" @change="toggleLayer('reservoirs')">
             水库数据
           </label>
-<<<<<<< HEAD
-=======
           <div class="layer-color-control">
             <div class="color-preview" :style="{ backgroundColor: layerColors.reservoirs }" @click="showColorPicker('reservoirs')"></div>
             <input type="color" v-model="layerColors.reservoirs" @change="updateLayerColor('reservoirs')" class="color-input" data-layer="reservoirs" />
           </div>
->>>>>>> origin/main
         </div>
         <div class="layer-control">
           <label>
             <input type="checkbox" v-model="layers.settlements" @change="toggleLayer('settlements')">
             居民地地名
           </label>
-<<<<<<< HEAD
-        </div>
-        
-        <!-- 模拟控制 -->
-        <div class="simulation-control">
-          <h4>模拟功能</h4>
-          <button @click="showLakeSimulation = !showLakeSimulation" class="simulation-btn">
-            {{ showLakeSimulation ? '隐藏' : '显示' }}湖泊污染模拟
-          </button>
-          <p v-if="showLakeSimulation" class="simulation-hint">
-            💡 点击地图上的湖泊多边形来选择要模拟的湖泊
-          </p>
-        </div>
-      </div>
-      
-      <!-- 湖泊污染扩散模拟面板 -->
-      <LakePollutionSimulation 
-        v-if="showLakeSimulation && layers.waterAreas"
-        ref="lakeSimulationRef"
-        :map="map"
-        :water-areas-layer="layerObjects.waterAreas"
-        @simulation-update="onSimulationUpdate"
-      />
-=======
           <div class="layer-color-control">
             <div class="color-preview point-preview" :style="{ backgroundColor: layerColors.settlements }" @click="showColorPicker('settlements')"></div>
             <input type="color" v-model="layerColors.settlements" @change="updateLayerColor('settlements')" class="color-input" data-layer="settlements" />
@@ -102,7 +61,6 @@
       </div>
       
 
->>>>>>> origin/main
       
       <!-- 数据信息面板 -->
       <div class="data-info">
@@ -125,28 +83,16 @@
 <script>
 import { ref, onMounted, reactive } from 'vue'
 import L from 'leaflet'
-<<<<<<< HEAD
-import LakePollutionSimulation from '../components/LakePollutionSimulation.vue'
-=======
->>>>>>> origin/main
 import PageHeader from '../components/Header.vue'
 
 export default {
   name: 'Home',
   components: {
-<<<<<<< HEAD
-    LakePollutionSimulation,
-=======
->>>>>>> origin/main
     PageHeader
   },
   setup() {
     const map = ref(null)
     const loading = ref(true)
-<<<<<<< HEAD
-    const showLakeSimulation = ref(false)
-=======
->>>>>>> origin/main
     const systemTitle = ref('环境风险分析与模拟系统')
     
     // 图层状态
@@ -158,8 +104,6 @@ export default {
       settlements: false
     })
     
-<<<<<<< HEAD
-=======
     // 图层颜色配置
     const layerColors = reactive({
       districts: '#ffffff',
@@ -169,7 +113,6 @@ export default {
       settlements: '#FFF176'
     })
     
->>>>>>> origin/main
     // 图层对象
     const layerObjects = reactive({
       districts: null,
@@ -179,12 +122,6 @@ export default {
       settlements: null
     })
     
-<<<<<<< HEAD
-    // 湖泊模拟组件引用
-    const lakeSimulationRef = ref(null)
-=======
-
->>>>>>> origin/main
     
     // 数据统计
     const dataStats = reactive({
@@ -195,16 +132,6 @@ export default {
       settlements: 0
     })
     
-<<<<<<< HEAD
-    // 初始化地图
-    const initMap = () => {
-      map.value = L.map('map').setView([39.9042, 116.4074], 10)
-      
-      // 添加OpenStreetMap底图
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors'
-      }).addTo(map.value)
-=======
     // 初始化地图 - 去除背景图，与WaterPollutionSimulation.vue保持一致
     const initMap = () => {
       map.value = L.map('map', {
@@ -213,7 +140,6 @@ export default {
       }).setView([39.9042, 116.4074], 10)
       
       // 不加载任何在线底图，保持白色背景
->>>>>>> origin/main
     }
     
     // 加载GeoJSON数据
@@ -240,19 +166,6 @@ export default {
                   layer.bindPopup(getPopupContent(key, feature.properties))
                 }
                 
-<<<<<<< HEAD
-                // 为水系面数据添加点击事件
-                if (key === 'waterAreas') {
-                  layer.on('click', (e) => {
-                    console.log('点击湖泊:', feature.properties) // 调试输出
-                    if (showLakeSimulation.value && lakeSimulationRef.value) {
-                      lakeSimulationRef.value.onLakeSelect(feature)
-                    }
-                  })
-                }
-=======
-
->>>>>>> origin/main
               }
             })
             
@@ -284,21 +197,6 @@ export default {
       }
     }
     
-<<<<<<< HEAD
-    // 获取图层样式
-    const getLayerStyle = (layerType) => {
-      const styles = {
-        districts: {
-          fillColor: 'transparent',
-          weight: 2.5,
-          opacity: 0.8,
-          color: '#ffffff',
-          fillOpacity: 0,
-          dashArray: '5, 8'
-        },
-        waterLines: {
-          color: '#64B5F6',
-=======
     // 获取图层样式 - 与WaterPollutionSimulation.vue保持一致的颜色配置
     const getLayerStyle = (layerType) => {
       const styles = {
@@ -312,27 +210,18 @@ export default {
         },
         waterLines: {
           color: layerColors.waterLines,
->>>>>>> origin/main
           weight: 2.5,
           opacity: 0.9
         },
         waterAreas: {
-<<<<<<< HEAD
-          fillColor: '#29B6F6',
-=======
           fillColor: layerColors.waterAreas,
->>>>>>> origin/main
           weight: 1.5,
           opacity: 0.9,
           color: '#0288D1',
           fillOpacity: 0.7
         },
         reservoirs: {
-<<<<<<< HEAD
-          fillColor: '#26C6DA',
-=======
           fillColor: layerColors.reservoirs,
->>>>>>> origin/main
           weight: 1.5,
           opacity: 0.9,
           color: '#00ACC1',
@@ -340,11 +229,7 @@ export default {
         },
         settlements: {
           radius: 6,
-<<<<<<< HEAD
-          fillColor: '#FFF176',
-=======
           fillColor: layerColors.settlements,
->>>>>>> origin/main
           color: '#ffffff',
           weight: 1.5,
           opacity: 1,
@@ -380,13 +265,8 @@ export default {
       if (layer) {
         if (layers[layerType]) {
           layer.addTo(map.value)
-<<<<<<< HEAD
-          // 切换湖泊模拟时自动将水系面图层置顶
-          if (layerType === 'waterAreas') {
-=======
           // 自动将水系面图层和水系线图层置顶
           if (layerType === 'waterAreas' || layerType === 'waterLines') {
->>>>>>> origin/main
             layer.bringToFront()
           }
         } else {
@@ -395,13 +275,6 @@ export default {
       }
     }
     
-<<<<<<< HEAD
-    // 处理模拟更新
-    const onSimulationUpdate = (data) => {
-      console.log('模拟数据更新:', data)
-    }
-    
-=======
     // 更新图层颜色
     const updateLayerColor = (layerType) => {
       const layer = layerObjects[layerType]
@@ -421,7 +294,6 @@ export default {
     
 
     
->>>>>>> origin/main
     onMounted(() => {
       initMap()
       loadGeoJSONData()
@@ -433,28 +305,17 @@ export default {
       layerObjects,
       map,
       dataStats,
-<<<<<<< HEAD
-      showLakeSimulation,
-      lakeSimulationRef,
-      systemTitle,
-      toggleLayer,
-      onSimulationUpdate
-=======
       systemTitle,
       layerColors,
       toggleLayer,
       updateLayerColor,
       showColorPicker
->>>>>>> origin/main
     }
   }
 }
 </script>
 
 <style scoped>
-<<<<<<< HEAD
-/* 从原App.vue复制样式 */
-=======
 .container {
   height: 100vh;
   display: flex;
@@ -612,5 +473,4 @@ export default {
     font-size: 1rem;
   }
 }
->>>>>>> origin/main
 </style> 
