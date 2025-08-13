@@ -21,10 +21,10 @@
           <img src="/icons/统计分析.png" alt="统计分析" width="32" height="32" />
         </router-link>
         <router-link to="/prediction-simulation" class="action-icon" title="预测模拟">
-          <img src="/icons/预测模拟.png" alt="预测模拟" width="32" height="32" />
+          <img src="/icons/水位预警.png" alt="预测模拟" width="32" height="32" />
         </router-link>
         <router-link to="/water-pollution-simulation" class="action-icon" title="水污染扩散模拟">
-          <img src="/icons/水库.png" alt="水污染扩散模拟" width="32" height="32" />
+          <img src="/icons/预测模拟.png" alt="水污染扩散模拟" width="32" height="32" />
         </router-link>
       </div>
       

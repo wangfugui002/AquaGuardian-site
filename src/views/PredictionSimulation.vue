@@ -1,6 +1,6 @@
 <template>
   <div class="prediction-simulation-container">
-    <prediction-simulation-header title="水位预警"></prediction-simulation-header>
+    <prediction-simulation-header title="预警分析"></prediction-simulation-header>
     
     <div class="prediction-simulation-content">
       <!-- 显示地图 (现在无论什么功能都会显示地图) -->
