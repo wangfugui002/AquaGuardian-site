@@ -325,7 +325,7 @@ const fetchList = async () => {
       ...Object.fromEntries(activeFilterFields.value.map(field => [field.value + 'Min', searchForm[field.value + 'Min']])),
       ...Object.fromEntries(activeFilterFields.value.map(field => [field.value + 'Max', searchForm[field.value + 'Max']]))
     }
-    const response = await axios.get('http://localhost:8080/api/waterSituation/list', { params })
+            const response = await axios.get('/api/waterSituation/list', { params })
     tableData.value = response.data.list
     total.value = response.data.total
   } catch (error) {
@@ -403,7 +403,7 @@ const handleSubmit = async () => {
     
     // 检查库名是否重复
     if (!isEdit.value) {
-      const checkResponse = await axios.get('http://localhost:8080/api/waterSituation/checkReservoirName', {
+              const checkResponse = await axios.get('/api/waterSituation/checkReservoirName', {
         params: {
           reservoirName: form.reservoirName
         }
@@ -415,10 +415,10 @@ const handleSubmit = async () => {
     }
     
     if (isEdit.value) {
-      await axios.post('http://localhost:8080/api/waterSituation/update', form)
+              await axios.post('/api/waterSituation/update', form)
       ElMessage.success('更新成功')
     } else {
-      await axios.post('http://localhost:8080/api/waterSituation/create', form)
+              await axios.post('/api/waterSituation/create', form)
       ElMessage.success('添加成功')
     }
     
@@ -463,7 +463,7 @@ const handleFileChange = async (file) => {
     const formData = new FormData()
     formData.append('file', file.raw)
     
-    const response = await axios.post('http://localhost:8080/api/waterSituation/batchImport', formData, {
+            const response = await axios.post('/api/waterSituation/batchImport', formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       }
@@ -499,7 +499,7 @@ const handleFileChange = async (file) => {
 
 const downloadTemplate = async () => {
   try {
-    const response = await axios.get('http://localhost:8080/api/waterSituation/template/download', {
+            const response = await axios.get('/api/waterSituation/template/download', {
       responseType: 'blob'
     })
     
@@ -531,7 +531,7 @@ const handleExport = async () => {
       ...Object.fromEntries(activeFilterFields.value.map(field => [field.value + 'Max', searchForm[field.value + 'Max']]))
     }
     
-    const response = await axios.get('http://localhost:8080/api/waterSituation/export', {
+            const response = await axios.get('/api/waterSituation/export', {
       params,
       responseType: 'blob'
     })
@@ -564,7 +564,7 @@ const handleDelete = async (row) => {
       type: 'warning'
     })
     
-    await axios.delete(`http://localhost:8080/api/waterSituation/delete/${row.id}`)
+            await axios.delete(`/api/waterSituation/delete/${row.id}`)
     ElMessage.success('删除成功')
     fetchList()
   } catch (error) {
