@@ -90,7 +90,7 @@
         <el-table-column prop="reservoirName" label="水库名称" />
         <el-table-column prop="year" label="年份" />
         <el-table-column prop="month" label="月份" />
-        <el-table-column prop="oxygen" label="溶解氧(mg/L)" />
+        <el-table-column prop="oxygen" label="氨氮(mg/L)" />
         <el-table-column prop="potassiumPermanganate" label="高锰酸盐指数(mg/L)" />
         <el-table-column prop="cod" label="化学需氧量(mg/L)" />
         <el-table-column prop="flow" label="流量(m³/s)" />
