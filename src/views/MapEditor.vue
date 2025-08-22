@@ -76,7 +76,7 @@
       </div>
       <!-- 水库图片控制面板 -->
       <div v-if="showReservoirImgPanel" class="reservoir-img-panel">
-        <span class="img-panel-close" @click="showReservoirImgPanel = false"></span>
+        <span class="img-panel-close" @click="showReservoirImgPanel = false" title="关闭">×</span>
         <img v-if="reservoirImgUrl" :src="reservoirImgUrl" :alt="reservoirImgName" class="reservoir-img-main" onerror="this.style.display='none'" />
         <div class="reservoir-img-title">{{ getPanelTitle() }}</div>
         
@@ -6514,10 +6514,32 @@ body {
   position: absolute;
   top: 8px;
   right: 12px;
-  font-size: 22px;
-  color: #888;
+  width: 30px;
+  height: 30px;
+  font-size: 24px;
+  color: #666;
+  background: #f5f5f5;
+  border: 2px solid #ddd;
+  border-radius: 50%;
   cursor: pointer;
   user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  font-weight: bold;
+  line-height: 1;
+}
+
+.img-panel-close:hover {
+  background: #ff4444;
+  color: white;
+  border-color: #ff4444;
+  transform: scale(1.1);
+}
+
+.img-panel-close:active {
+  transform: scale(0.95);
 }
 .reservoir-img-main {
   max-width: 220px;
@@ -7480,14 +7502,43 @@ body {
   overflow-y: auto;
 }
 
+.params-panel-header {
+  position: relative;
+  width: 100%;
+  height: 30px;
+  margin-bottom: 8px;
+}
+
 .params-panel-close {
   position: absolute;
-  top: 8px;
-  right: 12px;
-  font-size: 22px;
-  color: #888;
+  top: 0;
+  right: 0;
+  width: 30px;
+  height: 30px;
+  font-size: 24px;
+  color: #666;
+  background: #f5f5f5;
+  border: 2px solid #ddd;
+  border-radius: 50%;
   cursor: pointer;
   user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  font-weight: bold;
+  line-height: 1;
+}
+
+.params-panel-close:hover {
+  background: #ff4444;
+  color: white;
+  border-color: #ff4444;
+  transform: scale(1.1);
+}
+
+.params-panel-close:active {
+  transform: scale(0.95);
 }
 
 .params-title {
@@ -7568,10 +7619,32 @@ body {
   position: absolute;
   top: 8px;
   right: 12px;
-  font-size: 22px;
-  color: #888;
+  width: 30px;
+  height: 30px;
+  font-size: 24px;
+  color: #666;
+  background: #f5f5f5;
+  border: 2px solid #ddd;
+  border-radius: 50%;
   cursor: pointer;
   user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  font-weight: bold;
+  line-height: 1;
+}
+
+.history-panel-close:hover {
+  background: #ff4444;
+  color: white;
+  border-color: #ff4444;
+  transform: scale(1.1);
+}
+
+.history-panel-close:active {
+  transform: scale(0.95);
 }
 
 .history-title {
