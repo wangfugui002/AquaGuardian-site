@@ -90,7 +90,7 @@
         <el-table-column prop="reservoirName" label="水库名称" />
         <el-table-column prop="year" label="年份" />
         <el-table-column prop="month" label="月份" />
-        <el-table-column prop="oxygen" label="氨氮(mg/L)" />
+        <el-table-column prop="ammoniaNitrogen" label="氨氮(mg/L)" />
         <el-table-column prop="potassiumPermanganate" label="高锰酸盐指数(mg/L)" />
         <el-table-column prop="cod" label="化学需氧量(mg/L)" />
         <el-table-column prop="flow" label="流量(m³/s)" />
@@ -145,8 +145,8 @@
          <el-form-item label="月份" prop="month">
            <el-input-number v-model="form.month" :min="1" :max="12" style="width: 100%;" />
          </el-form-item>
-         <el-form-item label="溶解氧(mg/L)" prop="oxygen">
-           <el-input-number v-model="form.oxygen" :min="0" :step="0.1" style="width: 100%;" />
+         <el-form-item label="氨氮(mg/L)" prop="ammoniaNitrogen">
+           <el-input-number v-model="form.ammoniaNitrogen" :min="0" :step="0.1" style="width: 100%;" />
          </el-form-item>
          <el-form-item label="高锰酸盐指数(mg/L)" prop="potassiumPermanganate">
            <el-input-number v-model="form.potassiumPermanganate" :min="0" :step="0.1" style="width: 100%;" />
@@ -258,7 +258,7 @@ const form = reactive({
   reservoirName: '',
   year: new Date().getFullYear(),
   month: new Date().getMonth() + 1,
-  oxygen: null,
+  ammoniaNitrogen: null,
   potassiumPermanganate: null,
   cod: null,
   flow: null,
@@ -291,8 +291,8 @@ const searchForm = reactive({
   yearMax: null,
   monthMin: null,
   monthMax: null,
-  oxygenMin: null,
-  oxygenMax: null,
+  ammoniaNitrogenMin: null,
+  ammoniaNitrogenMax: null,
   potassiumPermanganateMin: null,
   potassiumPermanganateMax: null,
   codMin: null,
@@ -311,7 +311,7 @@ const searchForm = reactive({
 const availableFilterFields = reactive([
   { label: '年份', value: 'year', min: 1900, max: 2100, step: 1, unit: '年' },
   { label: '月份', value: 'month', min: 1, max: 12, step: 1, unit: '月' },
-  { label: '溶解氧', value: 'oxygen', min: 0, max: 100, step: 0.1, unit: 'mg/l' },
+  { label: '氨氮', value: 'ammoniaNitrogen', min: 0, max: 100, step: 0.1, unit: 'mg/l' },
   { label: '高锰酸盐', value: 'potassiumPermanganate', min: 0, max: 100, step: 0.1, unit: 'mg/l' },
   { label: '化学需氧量', value: 'cod', min: 0, max: 100, step: 0.1, unit: 'mg/l' },
   { label: '流量', value: 'flow', min: 0, max: 1000, step: 0.1, unit: 'm³/s' },
@@ -334,9 +334,25 @@ const fetchList = async () => {
       reservoirName: searchForm.reservoirName,
       ...searchForm // 将所有搜索参数传递给后端
     }
-    const response = await axios.get('http://localhost:8080/api/sectionMonitor/list', { params })
-    tableData.value = response.data.list
+            const response = await axios.get('/api/sectionMonitor/list', { params })
+    // 进行字段映射：数据库字段映射到表格显示字段
+    tableData.value = response.data.list.map(item => ({
+      ...item,
+      ammoniaNitrogen: item.oxygen,  // oxygen字段映射到ammoniaNitrogen（表格显示）
+    }))
     total.value = response.data.total
+    
+    // 调试信息
+    console.log('监测断面数据获取结果:', {
+      totalCount: response.data.total,
+      actualCount: response.data.list.length,
+      mappedCount: tableData.value.length,
+      sampleData: tableData.value[0] || {},
+      fieldMapping: {
+        originalOxygen: response.data.list[0]?.oxygen,
+        mappedAmmoniaNitrogen: tableData.value[0]?.ammoniaNitrogen
+      }
+    })
   } catch (error) {
     console.error('获取数据失败:', error)
     if (error.response) {
@@ -393,7 +409,11 @@ const handleAdd = () => {
 
 const handleEdit = (row) => {
   isEdit.value = true
-  Object.assign(form, row)
+  // 进行字段映射：数据库字段映射到表单字段
+  Object.assign(form, {
+    ...row,
+    ammoniaNitrogen: row.oxygen,  // oxygen字段映射到ammoniaNitrogen（用户显示）
+  })
   showAddDialog.value = true
 }
 
@@ -403,7 +423,7 @@ const handleSubmit = async () => {
     
     // 检查监测点名称是否重复
     if (!isEdit.value) {
-      const checkResponse = await axios.get('http://localhost:8080/api/sectionMonitor/checkMonitorPointName', {
+              const checkResponse = await axios.get('/api/sectionMonitor/checkMonitorPointName', {
         params: {
           monitorPointName: form.monitorPointName,
           reservoirName: form.reservoirName
@@ -415,11 +435,28 @@ const handleSubmit = async () => {
       }
     }
     
+    // 创建提交数据，进行字段映射
+    const submitData = {
+      ...form,
+      oxygen: form.ammoniaNitrogen,  // 氨氮对应oxygen字段
+      // 其他字段保持不变
+      monitorPointName: form.monitorPointName,
+      reservoirName: form.reservoirName,
+      year: form.year,
+      month: form.month,
+      potassiumPermanganate: form.potassiumPermanganate,
+      cod: form.cod,
+      flow: form.flow,
+      waterDepth: form.waterDepth,
+      totalNitrogen: form.totalNitrogen,
+      totalPhosphorus: form.totalPhosphorus
+    }
+    
     if (isEdit.value) {
-      await axios.post('http://localhost:8080/api/sectionMonitor/update', form)
+      await axios.post('/api/sectionMonitor/update', submitData)
       ElMessage.success('更新成功')
     } else {
-      await axios.post('http://localhost:8080/api/sectionMonitor/create', form)
+      await axios.post('/api/sectionMonitor/create', submitData)
       ElMessage.success('添加成功')
     }
     
@@ -442,7 +479,7 @@ const resetForm = () => {
   form.reservoirName = ''
   form.year = new Date().getFullYear()
   form.month = new Date().getMonth() + 1
-  form.oxygen = null
+  form.ammoniaNitrogen = null  // 氨氮字段（用户输入）
   form.potassiumPermanganate = null
   form.cod = null
   form.flow = null
@@ -458,7 +495,7 @@ const handleFileChange = async (file) => {
     const formData = new FormData()
     formData.append('file', file.raw)
     
-    const response = await axios.post('http://localhost:8080/api/sectionMonitor/batchImport', formData, {
+            const response = await axios.post('/api/sectionMonitor/batchImport', formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       }
@@ -494,7 +531,7 @@ const handleFileChange = async (file) => {
 
 const downloadTemplate = async () => {
   try {
-    const response = await axios.get('http://localhost:8080/api/sectionMonitor/template', {
+            const response = await axios.get('/api/sectionMonitor/template', {
       responseType: 'blob'
     })
     
@@ -519,7 +556,7 @@ const downloadTemplate = async () => {
 
 const handleExport = async () => {
   try {
-    const response = await axios.post('http://localhost:8080/api/sectionMonitor/export', {
+            const response = await axios.post('/api/sectionMonitor/export', {
       monitorPointName: searchForm.monitorPointName,
       reservoirName: searchForm.reservoirName,
       ...searchForm // 将所有搜索参数传递给后端
@@ -555,7 +592,7 @@ const handleDelete = async (row) => {
       type: 'warning'
     })
     
-    await axios.delete(`http://localhost:8080/api/sectionMonitor/delete/${row.id}`)
+            await axios.delete(`/api/sectionMonitor/delete/${row.id}`)
     ElMessage.success('删除成功')
     fetchList()
   } catch (error) {
