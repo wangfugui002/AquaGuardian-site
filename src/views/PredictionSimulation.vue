@@ -36,15 +36,7 @@
             <div class="color-preview" :style="{ backgroundColor: layerColors.reservoir }"></div>
       </div>
       </div>
-        <div class="layer-control">
-          <label>
-            <input type="checkbox" v-model="warningLayers.monitoringPoints" @change="toggleWarningLayer('monitoringPoints')">
-            监测点
-          </label>
-          <div class="layer-color-control">
-            <div class="color-preview point-preview" :style="{ backgroundColor: layerColors.monitoringPoints }"></div>
-          </div>
-              </div>
+
             </div>
             
 
@@ -89,7 +81,7 @@
                 <div class="difference">与当前水位差值</div>
               </div>
               <div class="comparison-row current-row">
-                <div class="label">当前水位</div>
+                <div class="label"><strong>当前水位</strong></div>
                 <div class="value current">{{ analysisData.inputValue }}</div>
                 <div class="difference">-</div>
               </div>
@@ -132,7 +124,7 @@
                 @click="showEmergencyPlan('warning')"
               >
                 <i class="plan-icon">⚠️</i>
-                <span>警戒水位预案</span>
+                <span>预案</span>
                 <i class="arrow-icon">→</i>
               </button>
               
@@ -197,6 +189,7 @@
                 class="measure-item"
                 :class="planData.type === 'warning' ? 'warning-measure' : 'danger-measure'"
                 style="contain: layout style;"
+                @click="handleMeasureClick(planData.reservoirName, planData.type, index)"
               >
                 <div class="measure-number">{{ index + 1 }}</div>
                 <div class="measure-content">{{ measure }}</div>
@@ -207,6 +200,24 @@
         
         <div class="analysis-modal-footer">
           <button class="btn-close" @click="closePlanModal">关闭</button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 图例 -->
+    <div class="legend-container">
+      <div class="legend-items">
+        <div class="legend-item">
+          <div class="legend-color danger-color"></div>
+          <span class="legend-text">危险水位</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-color warning-color"></div>
+          <span class="legend-text">警戒水位</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-color normal-color"></div>
+          <span class="legend-text">正常水位</span>
         </div>
       </div>
     </div>
@@ -259,24 +270,21 @@ export default {
     const warningLayers = ref({
       district: true,
       waterLine: true,
-      reservoir: true,
-      monitoringPoints: true
+      reservoir: true
     });
     
     // 图层颜色配置（与地图编辑页面保持一致）
     const layerColors = ref({
       district: '#b3e5fc',
       waterLine: '#64B5F6',
-      reservoir: '#26C6DA',
-      monitoringPoints: '#2196F3'
+      reservoir: '#26C6DA'
     });
     
     // 地图图层
     let mapLayers = {
       district: null,
       waterLine: null,
-      reservoir: null,
-      monitoringPoints: null
+      reservoir: null
     };
     
     // 区县标注图层
@@ -547,18 +555,24 @@ export default {
           const reservoirData = await reservoirResponse.json();
           
           mapLayers.reservoir = L.geoJSON(reservoirData, {
-            style: {
-              fillColor: layerColors.value.reservoir,
-              weight: 1.5,
-              opacity: 0.9,
-              color: layerColors.value.reservoir,
-              fillOpacity: 0.8
+            style: (feature) => {
+              const reservoirName = (feature && feature.properties && (feature.properties.name || feature.properties.NAME || feature.properties.Name || feature.properties['库名'])) || '未命名水库'
+              const isOrangeReservoir = reservoirName === '密云水库' || reservoirName === '官厅水库'
+              const color = isOrangeReservoir ? '#FFA500' : layerColors.value.reservoir
+              return {
+                fillColor: color,
+                weight: 1.5,
+                opacity: 0.9,
+                color: color,
+                fillOpacity: 0.8
+              }
             },
             onEachFeature: (feature, layer) => {
               if (feature.properties) {
                 const reservoirName = feature.properties.name || 
                                      feature.properties.NAME || 
                                      feature.properties.Name ||
+                                     feature.properties['库名'] ||
                                      '未命名水库';
                 
                 // 水库详细信息
@@ -661,14 +675,18 @@ export default {
                 };
                 
                 // 构建弹窗内容
+                const uid = 'res-' + Math.random().toString(36).slice(2, 8);
                 let popupContent = `<b>水库名称:</b> ${reservoirName}`;
                 
                 // 如果有该水库的详细信息，则添加到弹窗中
                 if (reservoirInfo[reservoirName]) {
                   popupContent += '<br><br><b>水位信息:</b><br>';
                   const info = reservoirInfo[reservoirName];
+                  // 读取保存的水位值，如果没有则使用默认值
+                  const savedLevel = readCurrentLevel(reservoirName);
+                  const displayLevel = savedLevel !== null ? `${savedLevel}米` : info['当前水位'];
+                  popupContent += `<b>当前水位:</b> <span id="current-level-${uid}" style="font-weight:700;">${displayLevel}</span><br>`;
                   popupContent += `汛限水位: ${info['汛限水位']}<br>`;
-                  popupContent += `当前水位: ${info['当前水位']}<br>`;
                   popupContent += `历史最高水位: ${info['历史最高水位']}<br>`;
                   if (info['最低水位']) {
                     popupContent += `最低水位: ${info['最低水位']}<br>`;
@@ -678,8 +696,78 @@ export default {
                   }
                 }
                 
+                // 在弹窗底部添加当前水位输入与分析按钮
+                const savedLevel = readCurrentLevel(reservoirName);
+                const inputValue = savedLevel !== null ? savedLevel : '';
+                popupContent += `<div style="margin-top:8px;">
+                  <input id="water-input-${uid}" type="number" step="0.01" placeholder="请输入当前水位" value="${inputValue}" style="width: 100%; box-sizing: border-box;" />
+                  <button id="water-analyze-${uid}" style="margin-top:6px; display:flex; align-items:center; gap:6px;">
+                    <span>🔍</span><span>预警分析</span>
+                  </button>
+                </div>`;
+                
+                // 如果该水库在信息列表中且不是橙色的两座，则渲染为蓝色
+                const isOrangeReservoir = reservoirName === '密云水库' || reservoirName === '官厅水库';
+                if (reservoirInfo[reservoirName] && !isOrangeReservoir) {
+                  layer.setStyle({ fillColor: '#2196F3', color: '#2196F3' });
+                }
+                
                 // 绑定弹窗显示水库信息
                 layer.bindPopup(popupContent);
+                
+                // 弹窗打开后挂载事件处理
+                layer.on('popupopen', () => {
+                  const inputEl = document.getElementById(`water-input-${uid}`);
+                  const btnEl = document.getElementById(`water-analyze-${uid}`);
+                  const currentSpan = document.getElementById(`current-level-${uid}`);
+                  if (inputEl && currentSpan) {
+                    inputEl.addEventListener('input', () => {
+                      const val = inputEl.value;
+                      currentSpan.textContent = val ? `${val}米` : `${(reservoirInfo[reservoirName]||{})['当前水位'] || ''}`;
+                      // 实时保存输入的水位值
+                      if (val) {
+                        saveCurrentLevel(reservoirName, parseFloat(val));
+                      }
+                    });
+                  }
+                  if (btnEl && inputEl) {
+                    btnEl.addEventListener('click', () => {
+                      const val = parseFloat(inputEl.value);
+                      if (isNaN(val)) {
+                        alert('请输入有效的当前水位');
+                        return;
+                      }
+                      // 保存输入的水位值
+                      saveCurrentLevel(reservoirName, val);
+                      
+                      // 组装 analysisData 并展示结果面板
+                      const info = reservoirInfo[reservoirName] || {};
+                      const floodLimit = parseFloat((info['汛限水位'] || '').toString().replace(/[^0-9.\-]/g, '')) || 0;
+                      const maxLevel = parseFloat((info['历史最高水位'] || '').toString().replace(/[^0-9.\-]/g, '')) || 0;
+                      const avgLevel = info['多年平均水位'] ? parseFloat((info['多年平均水位'] || '').toString().replace(/[^0-9.\-]/g, '')) : undefined;
+                      // 密云水库超过历史最高水位即为危险状态，其他水库按原逻辑
+                      const status = (reservoirName === '密云水库' && val > maxLevel) ? '危险' : 
+                                   (val > maxLevel ? '危险' : (val >= floodLimit ? '警戒' : '正常'));
+                      const statusClass = status === '危险' ? 'danger' : (status === '警戒' ? 'warning' : 'normal');
+                      // 根据输入值动态设置当前多边形样式
+                      const newColor = status === '危险' ? '#F44336' : (status === '警戒' ? '#FFA500' : '#2196F3');
+                      layer.setStyle({ fillColor: newColor, color: newColor });
+                      analysisData.value = {
+                        pointName: reservoirName,
+                        inputValue: val,
+                        floodLimit,
+                        maxLevel,
+                        avgLevel,
+                        status,
+                        statusClass,
+                        summary: status === '危险' ? 
+                          (reservoirName === '密云水库' ? '当前水位已超过历史最高水位，请立即启动危险水位应急响应。' : '当前水位已超过历史极值，请立即启动最高级应急响应。') : 
+                          (status === '警戒' ? '当前水位已达汛限水位，需加强监测并启动警戒预案。' : '当前水位处于安全范围。')
+                      };
+                      setTimeout(() => { showAnalysisModal.value = true; }, 1000);
+                    });
+                  }
+                });
                 
                 // 添加点击事件，在控制台输出水库名称
                 layer.on('click', (e) => {
@@ -700,425 +788,7 @@ export default {
           }
         }
         
-        // 加载监测点
-        if (warningLayers.value.monitoringPoints) {
-          const monitoringResponse = await fetch('./Beijing-GeoJson-Tzy/监测点.geojson');
-          const monitoringData = await monitoringResponse.json();
-          
-          mapLayers.monitoringPoints = L.geoJSON(monitoringData, {
-            pointToLayer: (feature, latlng) => L.circleMarker(latlng, {
-              radius: 8,
-              fillColor: layerColors.value.monitoringPoints,
-              color: '#fff',
-              weight: 2,
-              opacity: 1,
-              fillOpacity: 0.95
-            }),
-            onEachFeature: (feature, layer) => {
-              if (feature.properties) {
-                const pointName = feature.properties.name || 
-                                 feature.properties.NAME || 
-                                 feature.properties.Name ||
-                                 '未命名监测点';
-                
-                // 水库详细信息
-                const reservoirInfo = {
-                  '白河堡水库': {
-                    '汛限水位': '592.6米',
-                    '当前水位': '591.64米',
-                    '历史最高水位': '599.13米',
-                    '最低水位': '578米',
-                    '多年平均水位': '591.6米'
-                  },
-                  '密云水库': {
-                    '汛限水位': '152米',
-                    '当前水位': '154.79米',
-                    '历史最高水位': '155.59米',
-                    '最低水位': '126.0米',
-                    '多年平均水位': '151.8米'
-                  },
-                  '官厅水库': {
-                    '汛限水位': '476米',
-                    '当前水位': '478.23米',
-                    '历史最高水位': '497.0米',
-                    '最低水位': '471.47米'
-                  },
-                  '怀柔水库': {
-                    '汛限水位': '58米',
-                    '当前水位': '57.26米',
-                    '历史最高水位': '62.13米'
-                  },
-                  '半城子水库': {
-                    '汛限水位': '255米',
-                    '当前水位': '253.98米',
-                    '历史最高水位': '255米'
-                  },
-                  '北台上水库': {
-                    '汛限水位': '85米',
-                    '当前水位': '84.34米',
-                    '历史最高水位': '84.8米'
-                  },
-                  '崇青水库': {
-                    '汛限水位': '71.5米',
-                    '当前水位': '67.41米',
-                    '历史最高水位': '71.5米'
-                  },
-                  '大宁水库': {
-                    '汛限水位': '48米',
-                    '当前水位': '47.96米',
-                    '历史最高水位': '59.29米'
-                  },
-                  '大水峪水库': {
-                    '汛限水位': '166.4米',
-                    '当前水位': '166.45米',
-                    '历史最高水位': '168.9米'
-                  },
-                  '海子水库': {
-                    '汛限水位': '106.5米',
-                    '当前水位': '105.87米',
-                    '历史最高水位': '108.5米'
-                  },
-                  '黄松峪水库': {
-                    '汛限水位': '203.0米',
-                    '当前水位': '200.57米',
-                    '历史最高水位': '203.0米'
-                  },
-                  '沙厂水库': {
-                    '汛限水位': '165.5米',
-                    '当前水位': '163.28米',
-                    '历史最高水位': '165.5米'
-                  },
-                  '十三陵水库': {
-                    '汛限水位': '93.0米',
-                    '当前水位': '91.23米',
-                    '历史最高水位': '91.81米'
-                  },
-                  '桃峪口水库': {
-                    '汛限水位': '67.7米',
-                    '当前水位': '64.59米',
-                    '历史最高水位': '70.23米'
-                  },
-                  '西峪水库': {
-                    '汛限水位': '213.5米',
-                    '当前水位': '212.51米',
-                    '历史最高水位': '213.5米'
-                  },
-                  '遥桥峪水库': {
-                    '汛限水位': '464.0米',
-                    '当前水位': '461.34米',
-                    '历史最高水位': '464.0米'
-                  },
-                  '斋堂水库': {
-                    '汛限水位': '453.0米',
-                    '当前水位': '451.27米',
-                    '历史最高水位': '461.56米'
-                  },
-                  '珠窝水库': {
-                    '汛限水位': '348.4米',
-                    '当前水位': '346.69米',
-                    '历史最高水位': '352.5米'
-                  }
-                };
-                
-                // 使用自定义弹窗内容，包含事件处理
-                const popupContent = document.createElement('div');
-                popupContent.innerHTML = `
-                  <div class="monitoring-popup">
-                    <div class="popup-header">
-                      <h4>${pointName}</h4>
-                    </div>
-                    ${reservoirInfo[pointName] ? `
-                      <div class="popup-section">
-                        <h5>基本信息</h5>
-                        <div class="info-grid">
-                          <div class="info-item">
-                            <span class="label">汛限水位:</span>
-                            <span class="value">${reservoirInfo[pointName]['汛限水位']}</span>
-                          </div>
-                          <div class="info-item">
-                            <span class="label">当前水位:</span>
-                            <span class="value" id="current-level-${pointName}">${reservoirInfo[pointName]['当前水位']}</span>
-                          </div>
-                          <div class="info-item">
-                            <span class="label">历史最高:</span>
-                            <span class="value">${reservoirInfo[pointName]['历史最高水位']}</span>
-                          </div>
-                          ${reservoirInfo[pointName]['最低水位'] ? `
-                          <div class="info-item">
-                            <span class="label">最低水位:</span>
-                            <span class="value">${reservoirInfo[pointName]['最低水位']}</span>
-                          </div>
-                          ` : ''}
-                          ${reservoirInfo[pointName]['多年平均水位'] ? `
-                          <div class="info-item">
-                            <span class="label">多年平均:</span>
-                            <span class="value">${reservoirInfo[pointName]['多年平均水位']}</span>
-                          </div>
-                          ` : ''}
-                        </div>
-                      </div>
-                      
-                      <div class="popup-section">
-                        <div class="section-header">
-                          <div class="section-icon">⚠️</div>
-                          <h5>预警分析</h5>
-                        </div>
-                        <div class="warning-input-container">
-                          <div class="input-group">
-                            <input 
-                              type="number" 
-                              id="water-level-input-${pointName}" 
-                              placeholder="请输入当前水位" 
-                              step="0.01"
-                              class="modern-input"
-                            >
-                          </div>
-                          <button id="warning-btn-${pointName}" class="modern-warning-btn">
-                            <span class="btn-icon">🔍</span>
-                            <span class="btn-text">预警分析</span>
-                          </button>
-                        </div>
-                      </div>
-                    ` : ''}
-                  </div>
-                `;
-                
-                // 绑定弹窗
-                layer.bindPopup(popupContent);
-                
-                // 添加弹窗打开后的事件监听
-                layer.on('popupopen', (e) => {
-                  const warningBtn = document.getElementById(`warning-btn-${pointName}`);
-                  const waterLevelInput = document.getElementById(`water-level-input-${pointName}`);
-                  const currentLevelElement = document.getElementById(`current-level-${pointName}`);
-                  
-                  if (warningBtn && waterLevelInput && reservoirInfo[pointName]) {
-                    // 添加输入事件监听器，实时更新当前水位显示
-                    waterLevelInput.addEventListener('input', (e) => {
-                      const inputValue = parseFloat(e.target.value);
-                      if (!isNaN(inputValue) && currentLevelElement) {
-                        currentLevelElement.textContent = `${inputValue}米`;
-                      } else if (e.target.value === '' && currentLevelElement) {
-                        // 当输入框为空时，恢复显示原始水位
-                        currentLevelElement.textContent = reservoirInfo[pointName]['当前水位'];
-                      }
-                    });
-                    warningBtn.onclick = () => {
-                      const inputValue = parseFloat(waterLevelInput.value);
-                      if (isNaN(inputValue)) {
-                        alert('请输入有效的水位数值');
-                        return;
-                      }
-                      
-                      // 显示加载进度条
-                      warningBtn.innerHTML = `
-                        <div class="loading-progress">
-                          <div class="progress-bar">
-                            <div class="progress-fill"></div>
-                          </div>
-                          <span class="loading-text">分析中...</span>
-                        </div>
-                      `;
-                      warningBtn.disabled = true;
-                      warningBtn.style.backgroundColor = '#999';
-                      
-                      // 关闭当前弹窗
-                      map.closePopup();
-                      
-                      // 模拟加载过程
-                      setTimeout(() => {
-                      // 更新水库信息数据中的当前水位
-                      reservoirInfo[pointName]['当前水位'] = `${inputValue}米`;
-                      
-                      // 实时更新弹窗中显示的当前水位
-                      const currentLevelElement = document.getElementById(`current-level-${pointName}`);
-                      if (currentLevelElement) {
-                        currentLevelElement.textContent = `${inputValue}米`;
-                      }
-                      
-                      const floodLimit = parseFloat(reservoirInfo[pointName]['汛限水位'].replace('米', ''));
-                      const maxLevel = parseFloat(reservoirInfo[pointName]['历史最高水位'].replace('米', ''));
-                        const avgLevel = reservoirInfo[pointName]['多年平均水位'] ? parseFloat(reservoirInfo[pointName]['多年平均水位'].replace('米', '')) : null;
-                      
-                      let newColor = '#FF5722'; // 默认橙色
-                        let status = '';
-                        let statusClass = '';
-                      
-                      // 停止之前的闪烁效果
-                      if (layer.blinkInterval) {
-                        clearInterval(layer.blinkInterval);
-                        layer.blinkInterval = null;
-                      }
-                      
-                      if (inputValue < floodLimit) {
-                        newColor = '#2196F3'; // 蓝色
-                          status = '正常';
-                          statusClass = 'status-normal';
-                        // 停止闪烁效果
-                        layer.setStyle({
-                          fillColor: newColor,
-                          color: '#fff',
-                          weight: 2,
-                          opacity: 1,
-                          fillOpacity: 0.95
-                        });
-                      } else if (inputValue >= floodLimit && inputValue < maxLevel) {
-                        newColor = '#FFC107'; // 黄色
-                          status = '警戒';
-                          statusClass = 'status-warning';
-                        // 停止闪烁效果
-                        layer.setStyle({
-                          fillColor: newColor,
-                          color: '#fff',
-                          weight: 2,
-                          opacity: 1,
-                          fillOpacity: 0.95
-                        });
-                      } else if (inputValue >= maxLevel) {
-                        newColor = '#F44336'; // 红色
-                          status = '危险';
-                          statusClass = 'status-danger';
-                        // 开始闪烁效果
-                        let isVisible = true;
-                        const blinkInterval = setInterval(() => {
-                          isVisible = !isVisible;
-                          layer.setStyle({
-                            fillColor: newColor,
-                            color: '#fff',
-                            weight: 2,
-                            opacity: isVisible ? 1 : 0.3,
-                            fillOpacity: isVisible ? 0.95 : 0.3
-                          });
-                        }, 500); // 每500毫秒闪烁一次
-                        
-                        // 存储闪烁定时器，以便后续停止
-                        layer.blinkInterval = blinkInterval;
-                      }
-                      
-                        // 生成分析摘要和建议措施
-                        const generateAnalysisSummary = (currentLevel, floodLimit, maxLevel, avgLevel, status) => {
-                          let summary = '';
-                          
-                          if (status === '正常') {
-                            const diffFromLimit = (floodLimit - currentLevel).toFixed(2);
-                            summary = `当前水位${currentLevel}米低于汛限水位${floodLimit}米，水库运行状态正常。未超过汛限水位，与汛限水位相差${diffFromLimit}米。`;
-                            
-                            if (avgLevel) {
-                              const diffFromAvg = (currentLevel - avgLevel).toFixed(2);
-                              if (currentLevel < avgLevel) {
-                                summary += `水位低于多年平均值${avgLevel}米${Math.abs(diffFromAvg)}米，建议适当蓄水。`;
-                              } else {
-                                summary += `水位高于多年平均值${avgLevel}米${diffFromAvg}米，但仍处于安全范围内。`;
-                              }
-                            }
-                          } else if (status === '警戒') {
-                            const overLimit = (currentLevel - floodLimit).toFixed(2);
-                            const diffFromMax = (maxLevel - currentLevel).toFixed(2);
-                            
-                            summary = `当前水位${currentLevel}米已超过汛限水位${floodLimit}米，需要密切关注水位变化。超过汛限水位${overLimit}米，与最高水位差${diffFromMax}米。`;
-                            
-                            if (avgLevel) {
-                              const diffFromAvg = (currentLevel - avgLevel).toFixed(2);
-                              summary += `与平均水位差${diffFromAvg}米。`;
-                            }
-                            
-                            if (currentLevel > maxLevel * 0.95) {
-                              summary += `水位接近历史最高值，存在较大风险。`;
-                            }
-                          } else if (status === '危险') {
-                            const overLimit = (currentLevel - floodLimit).toFixed(2);
-                            const overMax = (currentLevel - maxLevel).toFixed(2);
-                            
-                            summary = `当前水位${currentLevel}米已超过历史最高水位${maxLevel}米，情况危急！超过汛限水位${overLimit}米，超过最高水位${overMax}米。`;
-                            
-                            if (avgLevel) {
-                              const diffFromAvg = (currentLevel - avgLevel).toFixed(2);
-                              summary += `与平均水位差${diffFromAvg}米。`;
-                            }
-                            
-                            summary += `需要立即采取紧急措施，防止水库溃坝等重大事故。`;
-                          }
-                          
-                          return summary;
-                        };
-                        
-                        const generateRecommendations = (currentLevel, floodLimit, maxLevel, status) => {
-                          let recommendations = [];
-                          
-                          if (status === '正常') {
-                            recommendations = [
-                              '继续正常监测水位变化',
-                              '保持水库日常运行管理',
-                              '定期检查水库设施设备',
-                              '做好防汛物资储备'
-                            ];
-                          } else if (status === '警戒') {
-                            recommendations = [
-                              '加强水位监测频率（每小时一次）',
-                              '启动防汛应急预案',
-                              '检查泄洪设施是否正常',
-                              '通知下游地区做好防洪准备',
-                              '准备应急抢险队伍和物资'
-                            ];
-                          } else if (status === '危险') {
-                            recommendations = [
-                              '立即启动最高级别应急响应',
-                              '紧急泄洪降低水位',
-                              '疏散下游危险区域人员',
-                              '通知相关部门启动应急预案',
-                              '24小时不间断监测水位',
-                              '准备抢险救援队伍待命'
-                            ];
-                          }
-                          
-                          return recommendations;
-                        };
-                        
-                        // 准备分析结果数据并显示在模态框中
-                        analysisData.value = {
-                          pointName: pointName,
-                          inputValue: inputValue,
-                          status: status,
-                          statusClass: statusClass,
-                          floodLimit: floodLimit,
-                          maxLevel: maxLevel,
-                          avgLevel: avgLevel,
-                          reservoirInfo: reservoirInfo[pointName],
-                          summary: generateAnalysisSummary(inputValue, floodLimit, maxLevel, avgLevel, status)
-                        };
-                        
-                        // 显示分析结果模态框
-                        showAnalysisModal.value = true;
-                        
-                        // 设置初始位置，避免与预案窗口重叠
-                        nextTick(() => {
-                          if (analysisModalRef.value) {
-                            const leftOffset = showPlanModal.value ? -250 : 0;
-                            analysisModalRef.value.style.transform = `translate(${leftOffset}px, 0)`;
-                            modalPosition.value = { x: leftOffset, y: 0 };
-                          }
-                        });
-                        
-                        // 恢复按钮状态
-                        warningBtn.innerHTML = `
-                          <span class="btn-icon">🔍</span>
-                          <span class="btn-text">预警分析</span>
-                        `;
-                        warningBtn.disabled = false;
-                        warningBtn.style.backgroundColor = '#2196F3';
-                        
-                        console.log(`监测点 ${pointName} 颜色已更新为: ${newColor}, 输入水位: ${inputValue}米, 状态: ${status}`);
-                      }, 1000); // 1秒的加载时间，与进度条动画匹配
-                    };
-                  }
-                });
-              }
-            }
-          }).addTo(map);
-          
-          // 确保监测点在最上层
-          mapLayers.monitoringPoints.bringToFront();
-        }
+
         
         // 调整地图视图以适应所有图层
           const activeLayers = [];
@@ -1173,14 +843,6 @@ export default {
             if (mapLayers.district && map.hasLayer(mapLayers.district)) {
               mapLayers.district.bringToBack();
             }
-          } else if (layerName === 'monitoringPoints') {
-            // 监测点放在最上层
-            mapLayers[layerName].bringToFront();
-          }
-          
-          // 如果是监测点图层，重新加载以确保正确显示
-          if (layerName === 'monitoringPoints') {
-            loadWarningLayers();
           }
         }
       } else if (mapLayers[layerName]) {
@@ -1385,23 +1047,7 @@ export default {
               '通知密云区防汛指挥部',
               '准备应急抢险物资和队伍'
             ],
-            danger: isOverMax3M ? [
-              '洪水预警升级至最高级别',
-              '自泄洪闸全开，逐级增大至1120m³/s（建库以来最大泄量）',
-              '提前48h完成密云、怀柔、顺义、通州4区20余万人避险转移',
-              '下游潮白河沿线堤防24h巡查、桥梁封闭、泵站预排',
-              '启动国家级应急响应，请求中央支援',
-              '建立跨省市联合指挥部，协调京津冀三地联动',
-              '启用备用泄洪通道和应急溢洪道',
-              '组织武警、消防、解放军等专业救援力量进驻',
-              '启动直升机空中监测和救援',
-              '建立临时医疗救治点和物资储备中心',
-              '实施交通管制，确保救援通道畅通',
-              '启动卫星通信和应急通信系统',
-              '组织专家团队现场评估大坝安全状况',
-              '准备启用下游蓄滞洪区进行分洪',
-              '启动媒体24小时滚动播报，发布紧急通告'
-            ] : [
+            danger: [
               '开启全部泄洪闸，最大下泄500m³/s',
               '提前24小时组织下游密云、怀柔等区县人员转移',
               '启动一级（最高级）应急响应',
@@ -2179,6 +1825,43 @@ export default {
       }
     };
     
+    // 本地存储相关函数
+    const storageKeyForReservoir = (name) => `ps:reservoir:currentLevel:${name}`;
+    const saveCurrentLevel = (name, val) => {
+      try { localStorage.setItem(storageKeyForReservoir(name), String(val)); } catch (e) {}
+    };
+    const readCurrentLevel = (name) => {
+      try {
+        const v = localStorage.getItem(storageKeyForReservoir(name));
+        return v !== null && v !== '' && !isNaN(Number(v)) ? Number(v) : null;
+      } catch (e) { return null; }
+    };
+
+    // 处理应急措施点击跳转
+    const handleMeasureClick = (reservoirName, planType, index) => {
+      // 密云水库警戒预案第1/2/3条措施
+      if (reservoirName === '密云水库' && planType === 'warning') {
+        const warningMap = {
+          0: '/plans/miyun-warning-1.html',
+          1: '/plans/miyun-warning-2.html',
+          2: '/plans/miyun-warning-3.html'
+        };
+        if (index in warningMap) {
+          window.open(warningMap[index], '_blank');
+        }
+      }
+      // 密云水库危险预案第1/2条措施
+      if (reservoirName === '密云水库' && planType === 'danger') {
+        const dangerMap = {
+          0: '/plans/miyun-danger-1.html',
+          1: '/plans/miyun-danger-2.html'
+        };
+        if (index in dangerMap) {
+          window.open(dangerMap[index], '_blank');
+        }
+      }
+    };
+    
 
     
     
@@ -2403,6 +2086,7 @@ export default {
       analysisModalRef,
       closeAnalysisModal,
       showEmergencyPlan,
+      handleMeasureClick,
       startDrag,
       // 预案模态框相关
       showPlanModal,
@@ -3441,6 +3125,7 @@ export default {
 
 .comparison-row .value.current {
   color: #1976d2;
+  font-weight: 700;
 }
 
 .comparison-row .value.limit {
@@ -3766,6 +3451,55 @@ export default {
   opacity: 1;
 }
 
+/* 图例样式 */
+.legend-container {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+  padding: 12px 16px;
+  z-index: 1000;
+  min-width: 160px;
+}
+
+.legend-items {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.legend-color {
+  width: 16px;
+  height: 16px;
+  border-radius: 2px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.danger-color {
+  background-color: #F44336;
+}
+
+.warning-color {
+  background-color: #FFA500;
+}
+
+.normal-color {
+  background-color: #2196F3;
+}
+
+.legend-text {
+  font-size: 12px;
+  color: #333;
+}
+
 /* 预案模态框特殊定位 */
 .analysis-modal.plan-modal {
   z-index: 10001;
@@ -3942,6 +3676,7 @@ export default {
 
 .comparison-item .value.current {
   color: #1976d2;
+  font-weight: 700;
 }
 
 .comparison-item .value.limit {
