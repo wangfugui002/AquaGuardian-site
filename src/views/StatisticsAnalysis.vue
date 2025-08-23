@@ -41,8 +41,8 @@
                 placeholder="选择显示表格(至少1个)" 
                 style="width: 280px; margin-right: 10px;"
               >
-                <el-option label="水库水位分布" value="waterLevel" />
-                <el-option label="水库蓄水量变化" value="waterStorage" />
+                <el-option label="水位分布" value="waterLevel" />
+                <el-option label="蓄水量变化" value="waterStorage" />
                 <el-option label="日均入库流量变化" value="waterInflow" />
                 <el-option label="日均出库流量变化" value="waterOutflow" />
               </el-select>
@@ -123,12 +123,12 @@
           </div>
           
           <div class="chart-container" v-if="selectedCharts.includes('waterLevel')">
-            <h3>水库水位分布</h3>
+            <h3>水位分布</h3>
             <div id="water-level-chart" class="chart"></div>
           </div>
           
           <div class="chart-container" v-if="selectedCharts.includes('waterStorage')">
-            <h3>水库蓄水量变化</h3>
+            <h3>蓄水量变化</h3>
             <div id="water-storage-chart" class="chart"></div>
           </div>
           
@@ -148,7 +148,7 @@
           <div class="panel-header">
             <h2>水情对比</h2>
             <div class="header-actions">
-              <el-select v-model="selectedReservoirs" multiple collapse-tags placeholder="选择水库(至少2个)" style="width: 380px; margin-right: 10px;">
+              <el-select v-model="selectedReservoirs" multiple collapse-tags placeholder="选择水库(至少2个)" style="width: 320px; margin-right: 10px;">
                 <el-option 
                   v-for="reservoir in reservoirList" 
                   :key="reservoir" 
@@ -164,17 +164,17 @@
                 end-placeholder="结束日期"
                 value-format="YYYY-MM-DD"
                 :disabled-date="disableUnavailableComparisonDates"
-                style="width: 280px; margin-right: 10px;"
+                style="width: 240px; margin-right: 10px;"
               />
               <el-select 
                 v-model="selectedComparisonCharts" 
                 multiple 
                 collapse-tags 
                 placeholder="选择显示表格(至少1个)" 
-                style="width: 280px; margin-right: 10px;"
+                style="width: 240px; margin-right: 10px;"
               >
-                <el-option label="水库水位对比" value="waterLevel" />
-                <el-option label="水库蓄水量对比" value="storage" />
+                <el-option label="水位对比" value="waterLevel" />
+                <el-option label="蓄水量对比" value="storage" />
                 <el-option label="入库流量对比" value="avgInflow" />
                 <el-option label="出库流量对比" value="avgOutflow" />
               </el-select>
@@ -198,12 +198,12 @@
           </div>
           
           <div class="chart-container" v-if="selectedComparisonCharts.includes('waterLevel')">
-            <h3>水库水位对比</h3>
+            <h3>水位对比</h3>
             <div id="water-level-comparison-chart" class="chart"></div>
           </div>
           
           <div class="chart-container" v-if="selectedComparisonCharts.includes('storage')">
-            <h3>水库蓄水量对比</h3>
+            <h3>蓄水量对比</h3>
             <div id="water-storage-comparison-chart" class="chart"></div>
           </div>
           
@@ -223,7 +223,7 @@
           <div class="panel-header">
             <h2>环境统计</h2>
             <div class="header-actions">
-              <el-select v-model="selectedMonitorPoint" placeholder="选择监测点" style="width: 200px; margin-right: 10px;">
+              <el-select v-model="selectedMonitorPoint" placeholder="选择监测点" style="width: 180px; margin-right: 10px;">
                 <el-option 
                   v-for="point in monitorPointList" 
                   :key="point" 
@@ -239,14 +239,14 @@
                 end-placeholder="结束月份"
                 value-format="YYYY-MM"
                 :disabled-date="disableUnavailableEnvDates"
-                style="width: 280px; margin-right: 10px;"
+                style="width: 240px; margin-right: 10px;"
               />
               <el-select 
                 v-model="selectedEnvironmentCharts" 
                 multiple 
                 collapse-tags 
                 placeholder="选择显示内容(至少1个)" 
-                style="width: 280px; margin-right: 10px;"
+                style="width: 240px; margin-right: 10px;"
               >
                 <el-option label="氨氮" value="ammoniaNitrogen" />
                 <el-option label="高锰酸盐" value="permanganateIndex" />
@@ -385,43 +385,43 @@
         <div v-else-if="activeBox==='environmentComparison'" class="environment-comparison-panel">
           <div class="panel-header">
             <h2>环境对比</h2>
-            <div class="header-actions">
-              <el-date-picker
-                v-model="selectedEnvComparisonDateRange"
-                type="monthrange"
-                range-separator="至"
-                start-placeholder="开始月份"
-                end-placeholder="结束月份"
-                value-format="YYYY-MM"
-                :disabled-date="disableUnavailableEnvComparisonDates"
-                style="width: 280px; margin-right: 10px;"
+                      <div class="header-actions">
+            <el-select v-model="selectedMonitorPoints" multiple collapse-tags placeholder="选择监测点(至少2个)" style="width: 240px; margin-right: 10px;">
+              <el-option 
+                v-for="point in monitorPointList" 
+                :key="point" 
+                :value="point" 
               />
-              <el-select v-model="selectedMonitorPoints" multiple collapse-tags placeholder="选择监测点(至少2个)" style="width: 280px; margin-right: 10px;">
-                <el-option 
-                  v-for="point in monitorPointList" 
-                  :key="point" 
-                  :value="point" 
-                />
-              </el-select>
-              <el-select 
-                v-model="selectedEnvironmentComparisonCharts" 
-                multiple 
-                collapse-tags 
-                placeholder="选择显示指标(至少1个)" 
-                style="width: 320px; margin-right: 10px;"
-              >
-                <el-option label="氨氮" value="ammoniaNitrogen" />
-                <el-option label="高锰酸盐" value="permanganateIndex" />
-                <el-option label="化学需氧量" value="cod" />
-                <el-option label="流量" value="flow" />
-                <el-option label="水深" value="depth" />
-                <el-option label="总氮" value="totalNitrogen" />
-                <el-option label="总磷" value="totalPhosphorus" />
-              </el-select>
-              <el-button type="primary" @click="refreshEnvironmentComparison">
-                刷新对比
-              </el-button>
-            </div>
+            </el-select>
+            <el-date-picker
+              v-model="selectedEnvComparisonDateRange"
+              type="monthrange"
+              range-separator="至"
+              start-placeholder="开始月份"
+              end-placeholder="结束月份"
+              value-format="YYYY-MM"
+              :disabled-date="disableUnavailableEnvComparisonDates"
+              style="width: 240px; margin-right: 10px;"
+            />
+            <el-select 
+              v-model="selectedEnvironmentComparisonCharts" 
+              multiple 
+              collapse-tags 
+              placeholder="选择显示指标(至少1个)" 
+              style="width: 280px; margin-right: 10px;"
+            >
+              <el-option label="氨氮" value="ammoniaNitrogen" />
+              <el-option label="高锰酸盐" value="permanganateIndex" />
+              <el-option label="化学需氧量" value="cod" />
+              <el-option label="流量" value="flow" />
+              <el-option label="水深" value="depth" />
+              <el-option label="总氮" value="totalNitrogen" />
+              <el-option label="总磷" value="totalPhosphorus" />
+            </el-select>
+            <el-button type="primary" @click="refreshEnvironmentComparison">
+              刷新对比
+            </el-button>
+          </div>
           </div>
           
 
@@ -1203,9 +1203,6 @@ export default {
           filteredDataCount: dateRangeData.length
         })
         
-        // 这里可以添加环境对比数据的处理逻辑
-        // 暂时只记录日志
-        
       } catch (error) {
         console.error('获取环境对比统计数据失败:', error)
       }
@@ -1223,14 +1220,28 @@ export default {
       const set = new Set(months)
       selectedMonitorPointMonths.value = set
       
-      // 设置默认月份范围（最近3个月）
+      // 设置默认月份范围 - 使用数据中的第一条记录作为开始月份
       if (!selectedEnvDateRange.value || selectedEnvDateRange.value.length !== 2) {
-        const today = new Date()
-        const threeMonthsAgo = new Date(today.getFullYear(), today.getMonth() - 2, 1)
-        selectedEnvDateRange.value = [
-          formatYearMonth(threeMonthsAgo),
-          formatYearMonth(today)
-        ]
+        if (months.length > 0) {
+          // 使用该监测点的第一条数据作为开始月份
+          const sortedMonths = Array.from(months).sort()
+          const firstMonth = sortedMonths[0]
+          
+          // 设置默认月份范围：从第一条数据到当前月份
+          const today = new Date()
+          const currentMonth = formatYearMonth(today)
+          
+          selectedEnvDateRange.value = [firstMonth, currentMonth]
+          console.log('使用监测点数据中的第一条记录设置月份范围:', selectedEnvDateRange.value)
+        } else {
+          // 如果没有数据，使用默认的3个月范围
+          const today = new Date()
+          const threeMonthsAgo = new Date(today.getFullYear(), today.getMonth() - 2, 1)
+          selectedEnvDateRange.value = [
+            formatYearMonth(threeMonthsAgo),
+            formatYearMonth(today)
+          ]
+        }
       }
     }
     const applySelectedEnvironmentStats = async () => {
@@ -1293,19 +1304,33 @@ export default {
             console.log('自动选择第一个监测点:', selectedMonitorPoint.value)
           }
           
-          // 设置默认月份范围
+          // 设置默认月份范围 - 使用数据中的第一条记录作为开始月份
           if (!selectedEnvDateRange.value || selectedEnvDateRange.value.length !== 2) {
-            const today = new Date()
-            const threeMonthsAgo = new Date(today.getFullYear(), today.getMonth() - 2, 1)
-            selectedEnvDateRange.value = [
-              formatYearMonth(threeMonthsAgo),
-              formatYearMonth(today)
-            ]
-            console.log('设置默认月份范围:', selectedEnvDateRange.value)
+            if (environmentDataList.value.length > 0) {
+              // 找到第一条数据的年月
+              const firstData = environmentDataList.value[0]
+              const firstMonth = `${firstData.year}-${String(firstData.month).padStart(2, '0')}`
+              
+              // 设置默认月份范围：从第一条数据到当前月份
+              const today = new Date()
+              const currentMonth = formatYearMonth(today)
+              
+              selectedEnvDateRange.value = [firstMonth, currentMonth]
+              console.log('使用数据中的第一条记录设置月份范围:', selectedEnvDateRange.value)
+            } else {
+              // 如果没有数据，使用默认的3个月范围
+              const today = new Date()
+              const threeMonthsAgo = new Date(today.getFullYear(), today.getMonth() - 2, 1)
+              selectedEnvDateRange.value = [
+                formatYearMonth(threeMonthsAgo),
+                formatYearMonth(today)
+              ]
+              console.log('设置默认月份范围:', selectedEnvDateRange.value)
+            }
           }
           
           // 更新环境统计数据
-          updateSelectedEnvironmentStats()
+          await updateSelectedEnvironmentStats()
           
           // 渲染环境对比图表
           renderEnvironmentComparisonChart()
@@ -1332,7 +1357,7 @@ export default {
       }
       
       try {
-        // 检查图表实例是否仍然有效，如果无效则重新创建
+        // 检查图表实例是否仍然有效，无效需要重新创建
         if (!waterLevelChart || !waterLevelChart.getDom || !waterLevelChart.getDom() || !document.contains(waterLevelChart.getDom())) {
           if (waterLevelChart) {
             try {
@@ -3286,15 +3311,29 @@ export default {
             console.log('自动选择第一个监测点:', selectedMonitorPoint.value)
           }
           
-          // 确保日期范围已设置
+          // 确保日期范围已设置 - 使用数据中的第一条记录作为开始月份
           if (!selectedEnvDateRange.value || selectedEnvDateRange.value.length !== 2) {
-            const today = new Date()
-            const threeMonthsAgo = new Date(today.getFullYear(), today.getMonth() - 2, 1)
-            selectedEnvDateRange.value = [
-              formatYearMonth(threeMonthsAgo),
-              formatYearMonth(today)
-            ]
-            console.log('设置默认月份范围:', selectedEnvDateRange.value)
+            if (environmentDataList.value.length > 0) {
+              // 找到第一条数据的年月
+              const firstData = environmentDataList.value[0]
+              const firstMonth = `${firstData.year}-${String(firstData.month).padStart(2, '0')}`
+              
+              // 设置默认月份范围：从第一条数据到当前月份
+              const today = new Date()
+              const currentMonth = formatYearMonth(today)
+              
+              selectedEnvDateRange.value = [firstMonth, currentMonth]
+              console.log('使用数据中的第一条记录设置月份范围:', selectedEnvDateRange.value)
+            } else {
+              // 如果没有数据，使用默认的3个月范围
+              const today = new Date()
+              const threeMonthsAgo = new Date(today.getFullYear(), today.getMonth() - 2, 1)
+              selectedEnvDateRange.value = [
+                formatYearMonth(threeMonthsAgo),
+                formatYearMonth(today)
+              ]
+              console.log('设置默认月份范围:', selectedEnvDateRange.value)
+            }
           }
           
           // 确保环境统计数据是最新的
@@ -4768,60 +4807,60 @@ export default {
 
 /* 环境统计图表彩色边框样式 */
 .ammonia-nitrogen-chart {
-  border-left-color: #E74C3C !important;  /* 红色 */
+  border-left-color: #E74C3C !important; 
 }
 
 .permanganate-index-chart {
-  border-left-color: #9B59B6 !important;  /* 紫色 */
+  border-left-color: #9B59B6 !important;
 }
 
 .cod-chart {
-  border-left-color: #F39C12 !important;  /* 橙色 */
+  border-left-color: #F39C12 !important;
 }
 
 .flow-chart {
-  border-left-color: #3498DB !important;  /* 蓝色 */
+  border-left-color: #3498DB !important;
 }
 
 .depth-chart {
-  border-left-color: #1ABC9C !important;  /* 青色 */
+  border-left-color: #1ABC9C !important;
 }
 
 .total-nitrogen-chart {
-  border-left-color: #2ECC71 !important;  /* 绿色 */
+  border-left-color: #2ECC71 !important;
 }
 
 .total-phosphorus-chart {
-  border-left-color: #E67E22 !important;  /* 深橙色 */
+  border-left-color: #E67E22 !important;
 }
 
 /* 环境对比图表彩色边框样式 */
 .environment-ammonia-nitrogen-chart {
-  border-left-color: #E74C3C !important;  /* 红色 */
+  border-left-color: #E74C3C !important;
 }
 
 .environment-permanganate-index-chart {
-  border-left-color: #9B59B6 !important;  /* 紫色 */
+  border-left-color: #9B59B6 !important;
 }
 
 .environment-cod-chart {
-  border-left-color: #F39C12 !important;  /* 橙色 */
+  border-left-color: #F39C12 !important;
 }
 
 .environment-flow-chart {
-  border-left-color: #3498DB !important;  /* 蓝色 */
+  border-left-color: #3498DB !important;
 }
 
 .environment-depth-chart {
-  border-left-color: #1ABC9C !important;  /* 青色 */
+  border-left-color: #1ABC9C !important;
 }
 
 .environment-total-nitrogen-chart {
-  border-left-color: #2ECC71 !important;  /* 绿色 */
+  border-left-color: #2ECC71 !important;
 }
 
 .environment-total-phosphorus-chart {
-  border-left-color: #E67E22 !important;  /* 深橙色 */
+  border-left-color: #E67E22 !important;
 }
 
 
