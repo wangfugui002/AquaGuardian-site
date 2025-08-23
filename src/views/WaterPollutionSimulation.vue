@@ -108,15 +108,36 @@
         @simulation-update="onRiverSimulationUpdate"
       />
       
-      <!-- 数据信息面板 -->
-      <div class="data-info">
-        <h4>数据统计</h4>
-        <p>区县数量: {{ dataStats.districts }}</p>
-        <p>水系线条: {{ dataStats.waterLines }}</p>
-        <p>水系面积: {{ dataStats.waterAreas }}</p>
-        <p>水库数量: {{ dataStats.reservoirs }}</p>
-        <p>居民地数量: {{ dataStats.settlements }}</p>
-        <p>监测点数量: {{ dataStats.monitoringPoints }}</p>
+      <!-- 污染物浓度图例 -->
+      <div class="pollution-legend">
+        <h4>污染物浓度图例</h4>
+        <div class="legend-items">
+          <div class="legend-item">
+            <div class="color-bar" style="background: linear-gradient(to right, #00ff00, #ffff00, #ff8000, #ff0000);"></div>
+            <div class="legend-labels">
+              <span>低浓度</span>
+              <span>高浓度</span>
+            </div>
+          </div>
+          <div class="legend-scale">
+            <div class="scale-item">
+              <div class="scale-color" style="background-color: #00ff00;"></div>
+              <span>0-25%</span>
+            </div>
+            <div class="scale-item">
+              <div class="scale-color" style="background-color: #ffff00;"></div>
+              <span>25-50%</span>
+            </div>
+            <div class="scale-item">
+              <div class="scale-color" style="background-color: #ff8000;"></div>
+              <span>50-75%</span>
+            </div>
+            <div class="scale-item">
+              <div class="scale-color" style="background-color: #ff0000;"></div>
+              <span>75-100%</span>
+            </div>
+          </div>
+        </div>
       </div>
       
       <!-- 加载提示 -->
@@ -695,7 +716,7 @@ export default {
   border-left: 3px solid #667eea;
 }
 
-.data-info {
+.pollution-legend {
   position: absolute;
   bottom: 20px;
   left: 20px;
@@ -704,19 +725,60 @@ export default {
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   z-index: 1000;
-  max-width: 250px;
+  max-width: 280px;
 }
 
-.data-info h4 {
+.pollution-legend h4 {
   margin: 0 0 15px 0;
   color: #333;
   font-size: 1.1rem;
+  text-align: center;
 }
 
-.data-info p {
-  margin: 5px 0;
-  font-size: 0.9rem;
+.legend-items {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.legend-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.color-bar {
+  height: 20px;
+  border-radius: 10px;
+  border: 1px solid #ddd;
+}
+
+.legend-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
   color: #666;
+}
+
+.legend-scale {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.scale-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: #666;
+}
+
+.scale-color {
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+  border: 1px solid #ddd;
 }
 
 .loading {
@@ -747,8 +809,8 @@ export default {
     padding: 15px;
   }
   
-  .data-info {
-    max-width: 200px;
+  .pollution-legend {
+    max-width: 220px;
     padding: 15px;
     bottom: 10px;
     left: 10px;
@@ -762,7 +824,7 @@ export default {
     font-size: 0.9rem;
   }
   
-  .data-info h4 {
+  .pollution-legend h4 {
     font-size: 1rem;
   }
 }
