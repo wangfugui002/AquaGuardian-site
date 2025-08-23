@@ -178,7 +178,7 @@
                 <el-option label="入库流量对比" value="avgInflow" />
                 <el-option label="出库流量对比" value="avgOutflow" />
               </el-select>
-              <el-button type="primary" @click="refreshComparisonData">刷新对比</el-button>
+              <el-button type="primary" @click="refreshComparisonData">刷新</el-button>
             </div>
           </div>
           
@@ -257,7 +257,7 @@
                 <el-option label="总磷" value="totalPhosphorus" />
               </el-select>
               <el-button type="primary" @click="applySelectedEnvironmentStats">
-                刷新数据
+                查询
               </el-button>
             </div>
           </div>
@@ -385,7 +385,7 @@
         <div v-else-if="activeBox==='environmentComparison'" class="environment-comparison-panel">
           <div class="panel-header">
             <h2>环境对比</h2>
-                      <div class="header-actions">
+            <div class="header-actions">
             <el-select v-model="selectedMonitorPoints" multiple collapse-tags placeholder="选择监测点(至少2个)" style="width: 240px; margin-right: 10px;">
               <el-option 
                 v-for="point in monitorPointList" 
@@ -393,35 +393,35 @@
                 :value="point" 
               />
             </el-select>
-            <el-date-picker
-              v-model="selectedEnvComparisonDateRange"
-              type="monthrange"
-              range-separator="至"
-              start-placeholder="开始月份"
-              end-placeholder="结束月份"
-              value-format="YYYY-MM"
-              :disabled-date="disableUnavailableEnvComparisonDates"
+              <el-date-picker
+                v-model="selectedEnvComparisonDateRange"
+                type="monthrange"
+                range-separator="至"
+                start-placeholder="开始月份"
+                end-placeholder="结束月份"
+                value-format="YYYY-MM"
+                :disabled-date="disableUnavailableEnvComparisonDates"
               style="width: 240px; margin-right: 10px;"
-            />
-            <el-select 
-              v-model="selectedEnvironmentComparisonCharts" 
-              multiple 
-              collapse-tags 
-              placeholder="选择显示指标(至少1个)" 
+              />
+              <el-select 
+                v-model="selectedEnvironmentComparisonCharts" 
+                multiple 
+                collapse-tags 
+                placeholder="选择显示指标(至少1个)" 
               style="width: 280px; margin-right: 10px;"
-            >
-              <el-option label="氨氮" value="ammoniaNitrogen" />
-              <el-option label="高锰酸盐" value="permanganateIndex" />
-              <el-option label="化学需氧量" value="cod" />
-              <el-option label="流量" value="flow" />
-              <el-option label="水深" value="depth" />
-              <el-option label="总氮" value="totalNitrogen" />
-              <el-option label="总磷" value="totalPhosphorus" />
-            </el-select>
-            <el-button type="primary" @click="refreshEnvironmentComparison">
-              刷新对比
-            </el-button>
-          </div>
+              >
+                <el-option label="氨氮" value="ammoniaNitrogen" />
+                <el-option label="高锰酸盐" value="permanganateIndex" />
+                <el-option label="化学需氧量" value="cod" />
+                <el-option label="流量" value="flow" />
+                <el-option label="水深" value="depth" />
+                <el-option label="总氮" value="totalNitrogen" />
+                <el-option label="总磷" value="totalPhosphorus" />
+              </el-select>
+              <el-button type="primary" @click="refreshEnvironmentComparison">
+                刷新
+              </el-button>
+            </div>
           </div>
           
 
@@ -1235,12 +1235,12 @@ export default {
           console.log('使用监测点数据中的第一条记录设置月份范围:', selectedEnvDateRange.value)
         } else {
           // 如果没有数据，使用默认的3个月范围
-          const today = new Date()
-          const threeMonthsAgo = new Date(today.getFullYear(), today.getMonth() - 2, 1)
-          selectedEnvDateRange.value = [
-            formatYearMonth(threeMonthsAgo),
-            formatYearMonth(today)
-          ]
+        const today = new Date()
+        const threeMonthsAgo = new Date(today.getFullYear(), today.getMonth() - 2, 1)
+        selectedEnvDateRange.value = [
+          formatYearMonth(threeMonthsAgo),
+          formatYearMonth(today)
+        ]
         }
       }
     }
@@ -1319,13 +1319,13 @@ export default {
               console.log('使用数据中的第一条记录设置月份范围:', selectedEnvDateRange.value)
             } else {
               // 如果没有数据，使用默认的3个月范围
-              const today = new Date()
-              const threeMonthsAgo = new Date(today.getFullYear(), today.getMonth() - 2, 1)
-              selectedEnvDateRange.value = [
-                formatYearMonth(threeMonthsAgo),
-                formatYearMonth(today)
-              ]
-              console.log('设置默认月份范围:', selectedEnvDateRange.value)
+            const today = new Date()
+            const threeMonthsAgo = new Date(today.getFullYear(), today.getMonth() - 2, 1)
+            selectedEnvDateRange.value = [
+              formatYearMonth(threeMonthsAgo),
+              formatYearMonth(today)
+            ]
+            console.log('设置默认月份范围:', selectedEnvDateRange.value)
             }
           }
           
@@ -3326,13 +3326,13 @@ export default {
               console.log('使用数据中的第一条记录设置月份范围:', selectedEnvDateRange.value)
             } else {
               // 如果没有数据，使用默认的3个月范围
-              const today = new Date()
-              const threeMonthsAgo = new Date(today.getFullYear(), today.getMonth() - 2, 1)
-              selectedEnvDateRange.value = [
-                formatYearMonth(threeMonthsAgo),
-                formatYearMonth(today)
-              ]
-              console.log('设置默认月份范围:', selectedEnvDateRange.value)
+            const today = new Date()
+            const threeMonthsAgo = new Date(today.getFullYear(), today.getMonth() - 2, 1)
+            selectedEnvDateRange.value = [
+              formatYearMonth(threeMonthsAgo),
+              formatYearMonth(today)
+            ]
+            console.log('设置默认月份范围:', selectedEnvDateRange.value)
             }
           }
           
