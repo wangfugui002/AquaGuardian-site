@@ -28,12 +28,7 @@
         </router-link>
       </div>
       
-      <div class="header-actions">
-        <!-- 第六个功能图标 - 系统设置 -->
-        <div class="action-icon" title="系统设置">
-          <img src="/icons/设置.png" alt="系统设置" width="32" height="32" />
-        </div>
-      </div>
+
     </div>
   </header>
 </template>

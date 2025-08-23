@@ -78,13 +78,9 @@
               <div class="comparison-row header">
                 <div class="label">项目</div>
                 <div class="value">水位(米)</div>
-                <div class="difference">与当前水位差值</div>
+                <div class="difference">与输入水位差值</div>
               </div>
-              <div class="comparison-row current-row">
-                <div class="label"><strong>当前水位</strong></div>
-                <div class="value current">{{ analysisData.inputValue }}</div>
-                <div class="difference">-</div>
-              </div>
+
               <div class="comparison-row">
                 <div class="label">汛限水位</div>
                 <div class="value limit">{{ analysisData.floodLimit }}</div>
@@ -134,7 +130,7 @@
                 @click="showEmergencyPlan('danger')"
               >
                 <i class="plan-icon">🚨</i>
-                <span>危险水位预案</span>
+                <span>预案</span>
                 <i class="arrow-icon">→</i>
               </button>
             </div>
@@ -169,12 +165,12 @@
             </div>
           </div>
           
-          <!-- 当前水位信息 -->
+          <!-- 输入水位信息 -->
           <div class="current-level-info">
             <h5>当前状况</h5>
             <div class="level-info-content">
               <p><strong>水库名称：</strong>{{ planData.reservoirName }}</p>
-              <p><strong>当前水位：</strong>{{ planData.currentLevel }}米</p>
+              <p><strong>输入水位：</strong>{{ planData.currentLevel }}米</p>
               <p><strong>预警等级：</strong>{{ planData.type === 'warning' ? '二级（警戒）' : '一级（危险）' }}</p>
             </div>
           </div>
@@ -389,7 +385,7 @@ export default {
         }
       },
       legend: {
-        data: ['当前水位 (m)', '警戒水位 (m)'],
+        data: ['输入水位 (m)', '警戒水位 (m)'],
         textStyle: { color: '#333' },
         top: 0,
         right: 10
@@ -418,7 +414,7 @@ export default {
       },
       series: [
         {
-          name: '当前水位 (m)',
+          name: '输入水位 (m)',
           type: 'bar',
           barWidth: '40%',
           data: [
@@ -556,14 +552,12 @@ export default {
           
           mapLayers.reservoir = L.geoJSON(reservoirData, {
             style: (feature) => {
-              const reservoirName = (feature && feature.properties && (feature.properties.name || feature.properties.NAME || feature.properties.Name || feature.properties['库名'])) || '未命名水库'
-              const isOrangeReservoir = reservoirName === '密云水库' || reservoirName === '官厅水库'
-              const color = isOrangeReservoir ? '#FFA500' : layerColors.value.reservoir
+              // 初始状态下，所有水库都显示为蓝色
               return {
-                fillColor: color,
+                fillColor: '#2196F3',
                 weight: 1.5,
                 opacity: 0.9,
-                color: color,
+                color: '#2196F3',
                 fillOpacity: 0.8
               }
             },
@@ -685,7 +679,7 @@ export default {
                   // 读取保存的水位值，如果没有则使用默认值
                   const savedLevel = readCurrentLevel(reservoirName);
                   const displayLevel = savedLevel !== null ? `${savedLevel}米` : info['当前水位'];
-                  popupContent += `<b>当前水位:</b> <span id="current-level-${uid}" style="font-weight:700;">${displayLevel}</span><br>`;
+
                   popupContent += `汛限水位: ${info['汛限水位']}<br>`;
                   popupContent += `历史最高水位: ${info['历史最高水位']}<br>`;
                   if (info['最低水位']) {
@@ -696,7 +690,7 @@ export default {
                   }
                 }
                 
-                // 在弹窗底部添加当前水位输入与分析按钮
+                // 在弹窗底部添加水位输入与分析按钮
                 const savedLevel = readCurrentLevel(reservoirName);
                 const inputValue = savedLevel !== null ? savedLevel : '';
                 popupContent += `<div style="margin-top:8px;">
@@ -706,9 +700,8 @@ export default {
                   </button>
                 </div>`;
                 
-                // 如果该水库在信息列表中且不是橙色的两座，则渲染为蓝色
-                const isOrangeReservoir = reservoirName === '密云水库' || reservoirName === '官厅水库';
-                if (reservoirInfo[reservoirName] && !isOrangeReservoir) {
+                // 初始状态下，所有水库都渲染为蓝色
+                if (reservoirInfo[reservoirName]) {
                   layer.setStyle({ fillColor: '#2196F3', color: '#2196F3' });
                 }
                 
@@ -734,7 +727,7 @@ export default {
                     btnEl.addEventListener('click', () => {
                       const val = parseFloat(inputEl.value);
                       if (isNaN(val)) {
-                        alert('请输入有效的当前水位');
+                        alert('请输入有效的水位');
                         return;
                       }
                       // 保存输入的水位值
@@ -761,8 +754,8 @@ export default {
                         status,
                         statusClass,
                         summary: status === '危险' ? 
-                          (reservoirName === '密云水库' ? '当前水位已超过历史最高水位，请立即启动危险水位应急响应。' : '当前水位已超过历史极值，请立即启动最高级应急响应。') : 
-                          (status === '警戒' ? '当前水位已达汛限水位，需加强监测并启动警戒预案。' : '当前水位处于安全范围。')
+                          (reservoirName === '密云水库' ? '输入水位已超过历史最高水位，请立即启动危险水位应急响应。' : '输入水位已超过历史极值，请立即启动最高级应急响应。') : 
+                          (status === '警戒' ? '输入水位已达汛限水位，需加强监测并启动警戒预案。' : '输入水位处于安全范围。')
                       };
                       setTimeout(() => { showAnalysisModal.value = true; }, 1000);
                     });
