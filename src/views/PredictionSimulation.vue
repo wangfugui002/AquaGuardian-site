@@ -1849,9 +1849,55 @@ export default {
         console.error('清空水库水位数据失败:', e);
       }
     };
+    
+    // 保存当前分析状态
+    const saveAnalysisState = () => {
+      try {
+        const state = {
+          analysisData: analysisData.value,
+          showAnalysisModal: showAnalysisModal.value,
+          showPlanModal: showPlanModal.value,
+          planData: planData.value,
+          timestamp: Date.now()
+        };
+        localStorage.setItem('ps:analysisState', JSON.stringify(state));
+        console.log('已保存分析状态');
+      } catch (e) {
+        console.error('保存分析状态失败:', e);
+      }
+    };
+
+    // 恢复分析状态
+    const restoreAnalysisState = () => {
+      try {
+        const savedState = localStorage.getItem('ps:analysisState');
+        if (savedState) {
+          const state = JSON.parse(savedState);
+          // 检查状态是否在24小时内
+          if (Date.now() - state.timestamp < 24 * 60 * 60 * 1000) {
+            analysisData.value = state.analysisData;
+            showAnalysisModal.value = state.showAnalysisModal;
+            showPlanModal.value = state.showPlanModal;
+            planData.value = state.planData;
+            console.log('已恢复分析状态');
+            return true;
+          } else {
+            // 超过24小时，清除过期状态
+            localStorage.removeItem('ps:analysisState');
+          }
+        }
+        return false;
+      } catch (e) {
+        console.error('恢复分析状态失败:', e);
+        return false;
+      }
+    };
 
     // 处理应急措施点击跳转
     const handleMeasureClick = (reservoirName, planType, index) => {
+      // 跳转前保存当前分析状态
+      saveAnalysisState();
+      
       // 密云水库警戒预案第1/2/3条措施
       if (reservoirName === '密云水库' && planType === 'warning') {
         const warningMap = {
@@ -1860,7 +1906,18 @@ export default {
           2: '/plans/miyun-warning-3.html'
         };
         if (index in warningMap) {
-          window.open(warningMap[index], '_blank');
+          // 使用新窗口打开，但保持当前页面状态
+          const newWindow = window.open(warningMap[index], '_blank');
+          // 监听新窗口关闭事件，恢复状态
+          if (newWindow) {
+            const checkClosed = setInterval(() => {
+              if (newWindow.closed) {
+                clearInterval(checkClosed);
+                // 从预案页面返回时，恢复分析状态
+                restoreAnalysisState();
+              }
+            }, 1000);
+          }
         }
       }
       // 密云水库危险预案第1/2条措施
@@ -1870,7 +1927,18 @@ export default {
           1: '/plans/miyun-danger-2.html'
         };
         if (index in dangerMap) {
-          window.open(dangerMap[index], '_blank');
+          // 使用新窗口打开，但保持当前页面状态
+          const newWindow = window.open(dangerMap[index], '_blank');
+          // 监听新窗口关闭事件，恢复状态
+          if (newWindow) {
+            const checkClosed = setInterval(() => {
+              if (newWindow.closed) {
+                clearInterval(checkClosed);
+                // 从预案页面返回时，恢复分析状态
+                restoreAnalysisState();
+              }
+            }, 1000);
+          }
         }
       }
     };
@@ -2015,8 +2083,22 @@ export default {
     };
 
     onMounted(() => {
-      // 页面加载时清空所有水库的水位数据
-      clearAllReservoirLevels();
+      // 尝试恢复之前的分析状态
+      const restored = restoreAnalysisState();
+      
+      // 如果没有恢复状态，则清空所有水库的水位数据
+      if (!restored) {
+        clearAllReservoirLevels();
+      }
+      
+      // 添加页面可见性变化监听，当用户从预案页面返回时恢复状态
+      const handleVisibilityChange = () => {
+        if (!document.hidden) {
+          // 页面变为可见时，尝试恢复状态
+          restoreAnalysisState();
+        }
+      };
+      document.addEventListener('visibilitychange', handleVisibilityChange);
       
       // 确保地图容器已渲染后再初始化地图
       setTimeout(() => {
