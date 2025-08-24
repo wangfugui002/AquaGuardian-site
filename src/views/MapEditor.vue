@@ -122,16 +122,16 @@
           <div class="reservoir-buttons">
             <button class="reservoir-btn reservoir-params-btn" @click="showReservoirParamsPanel = true">
               <span class="btn-icon">📊</span>
-              水库参数
+              水库基本信息
             </button>
             <button class="reservoir-btn flood-history-btn" @click="showFloodHistoryPanel = true">
               <span class="btn-icon">📚</span>
               防洪历史
             </button>
-            <!-- 密云水库视频搜索按钮 -->
-            <button v-if="reservoirImgName === '密云水库'" class="reservoir-btn search-video-btn" @click="searchReservoirVideo">
-              <span class="btn-icon">🔍</span>
-              搜索视频
+            <!-- 密云水库视频播放按钮 -->
+            <button v-if="reservoirImgName === '密云水库'" class="reservoir-btn play-video-btn" @click="playReservoirVideo">
+              <span class="btn-icon">▶️</span>
+              播放视频
             </button>
           </div>
         </div>
@@ -175,7 +175,7 @@
         </div>
       </div>
       
-      <!-- 水库参数面板 -->
+      <!-- 水库基本信息面板 -->
       <div v-if="showReservoirParamsPanel" class="reservoir-params-panel">
         <span class="params-panel-close" @click="showReservoirParamsPanel = false">×</span>
         <div class="params-title">{{ getParamsPanelTitle() }}</div>
@@ -183,7 +183,7 @@
           <div v-if="currentReservoirProps" class="params-table">
             <!-- 根据图层类型显示不同的参数 -->
             <div v-if="currentQueryLayer === 'beijingReservoirs'">
-              <!-- 水库参数字段 -->
+              <!-- 水库基本信息字段 -->
               <div v-for="field in getReservoirParamFields()" :key="field.key" class="param-row">
                 <span class="param-label">{{ field.label }}：</span>
                 <span class="param-value">{{ formatReservoirParamValue(field.key, currentReservoirProps[field.key]) }}</span>
@@ -198,7 +198,7 @@
             </div>
           </div>
           <div v-else class="no-data">
-            <p>暂无水库参数数据</p>
+            <p>暂无水库基本信息数据</p>
           </div>
         </div>
       </div>
@@ -228,20 +228,16 @@
           
           <!-- 密云水库防洪历史 -->
           <div v-if="reservoirImgName === '密云水库'" class="history-section">
-            <h4>水库概况</h4>
-            <p>密云水库是北京市最大的水库，总库容43.75亿立方米，是北京市重要的饮用水源地，承担着防洪、供水、生态等多重功能。</p>
+            <h4>防洪历史关键事件</h4>
+            <p><strong>建库前水患严重：</strong>潮河、白河上游山势陡峭，水流湍急，下游河道平浅且无堤防，常常泛滥成灾。1958年7月中旬，密云连降暴雨，九松山地区降水量高达280.5毫米，潮河最大流量达3140立方米/秒，洪水涌进密云县城，东门、南门里积水1米多深，潮河沿岸20多个村、2700多人被洪水围困。</p>
+            <p><strong>建设期间的防洪隐患：</strong>1958年密云水库动工建设，按要求1959年汛期前主副坝要修筑到143米的坝顶拦洪高程。但在建设过程中，白河主坝导流廊道的钢筋被抽掉且进水塔未建，导致泄洪存在危险。后来经过测算，估算出廊道安全泄洪的最高水位为130米高程，并千方百计补建进水塔，以保证水库安全度汛。</p>
+            <p><strong>建成后防洪成效显著：</strong>1960年密云水库建成运行后，全部拦蓄了上游发生的各次洪水，使下游耕地免遭水灾，保护了下游农田600万亩。截至2020年8月底，密云水库拦蓄大于等于1000立方米/秒的入库洪峰30余次。其中，1994年7月13日出现建库以来最大洪峰流量3670立方米/秒。</p>
+            <p><strong>2025年防洪新挑战：</strong>2025年7月27日3时，密云水库入库流量达到6550立方米/秒，超过1994年的历史最高值。28日8时，入库流量达4550立方米/秒，为历史第二洪峰。此次洪水过程中，密云水库充分发挥拦洪削峰作用，7月23日8时至7月29日19时，累计入库水量达8.1亿立方米，累计出库水量1.8亿立方米。</p>
           </div>
           <div v-if="reservoirImgName === '密云水库'" class="history-section">
-            <h4>防洪功能</h4>
-            <p>密云水库是潮白河流域的重要防洪工程，通过拦蓄洪水，有效保护下游北京城区和周边地区的防洪安全。水库建成以来，在多次大洪水期间发挥了重要的防洪作用。</p>
-          </div>
-          <div v-if="reservoirImgName === '密云水库'" class="history-section">
-            <h4>2023年防洪表现</h4>
-            <p>在2023年"23·7"海河流域特大洪水防御中，密云水库与怀柔水库协同作战，累计拦蓄洪水14.68亿立方米，为保障北京城市防洪安全做出了重要贡献。</p>
-          </div>
-          <div v-if="reservoirImgName === '密云水库'" class="history-section">
-            <h4>供水保障</h4>
-            <p>密云水库是北京市重要的饮用水源地，通过南水北调工程，为北京市提供优质的水源保障，确保城市供水安全。</p>
+            <h4>历史径流量变化</h4>
+            <p><strong>多年平均径流量变化：</strong>根据之前的分析数据，60年代以前流域多年平均径流量为15亿立方米，20世纪80年代末减少到7-8亿立方米，90年代后半期减少到2-3亿立方米。而根据2025年的信息，密云水库多年平均入库流量为27.1立方米/秒，多年平均入库径流量约为8.55亿立方米。</p>
+            <p><strong>特殊时期径流量变化：</strong>2025年7月26日-8月2日，密云水库最大7天入库水量达9.8亿立方米，为历史最大值，超过1974年7月25日的7.14亿立方米。2025年7月27日3时入库流量6550立方米/秒，远超多年平均入库流量，是其242倍。</p>
           </div>
           
           <!-- 北台上水库防洪历史 -->
@@ -340,12 +336,12 @@
       <div class="custom-toolbar">
         <img src="/icons/打开mxd.png" alt="打开mxd" title="打开mxd" @click="openMxdFile" />
         <div class="zoom-dropdown-container">
-          <img src="/icons/放大.png" alt="放大" title="放大" @click="toggleZoomMenu" :class="{ 'active-tool': activeMapTool === 'zoomIn' || activeMapTool === 'rectangleZoom' }" />
+          <img src="/icons/放大.png" alt="放大" title="放大" @click="smartToolToggle('zoomIn')" :class="{ 'active-tool': toolStates.zoomIn.isActive || toolStates.rectangleZoom.isActive }" />
           <div v-if="showZoomDropdown" class="zoom-dropdown">
-            <div class="zoom-option" @click="activateZoomIn">
+            <div class="zoom-option" @click="smartToolToggle('zoomIn')">
               <span>按点放大</span>
             </div>
-            <div class="zoom-option" @click="activateRectangleZoom">
+            <div class="zoom-option" @click="smartToolToggle('rectangleZoom')">
               <span>拉框放大</span>
             </div>
           </div>
@@ -356,33 +352,34 @@
           <span>❌</span>
         </div>
         <div class="zoom-dropdown-container zoom-out-container">
-          <img src="/icons/缩小.png" alt="缩小" title="缩小" @click="toggleZoomOutMenu" :class="{ 'active-tool': activeMapTool === 'zoomOut' || activeMapTool === 'rectangleZoomOut' }" />
+          <img src="/icons/缩小.png" alt="缩小" title="缩小" @click="smartToolToggle('zoomOut')" :class="{ 'active-tool': toolStates.zoomOut.isActive || toolStates.rectangleZoomOut.isActive }" />
           <div v-if="showZoomOutDropdown" class="zoom-dropdown">
-            <div class="zoom-option" @click="activateZoomOut">
+            <div class="zoom-option" @click="smartToolToggle('zoomOut')">
               <span>按点缩小</span>
             </div>
-            <div class="zoom-option" @click="activateRectangleZoomOut">
+            <div class="zoom-option" @click="smartToolToggle('rectangleZoomOut')">
               <span>拉框缩小</span>
             </div>
           </div>
         </div>
         <img src="/icons/全图.png" alt="全图" title="全图" @click="viewFullExtent" />
-        <img src="/icons/手.png" alt="平移" title="平移" @click="activatePan" :class="{ 'active-tool': activeMapTool === 'pan' }" />
-        <img src="/icons/选择要素.png" alt="选择要素" title="选择要素" @click="activateSelectFeature" :class="{ 'active-tool': activeMapTool === 'selectFeature' }" />
+        <img src="/icons/手.png" alt="平移" title="平移" @click="smartToolToggle('pan')" :class="{ 'active-tool': toolStates.pan.isActive }" />
+        <img src="/icons/选择要素.png" alt="选择要素" title="选择要素" @click="smartToolToggle('selectFeature')" :class="{ 'active-tool': toolStates.selectFeature.isActive }" />
         <!-- 新增：清除选择按钮 -->
         <div v-if="selectedFeatures.size > 0" class="clear-selection-btn" @click="clearAllFeatureSelections" title="清除所有选择">
           <span>🗑️</span>
         </div>
         <!-- 新增：查询按钮 -->
-        <img src="/icons/查询.png" alt="查询" title="查询" @click="activateQuery" :class="{ 'active-tool': activeMapTool === 'query' }" />
+        <img src="/icons/查询.png" alt="查询" title="查询" @click="smartToolToggle('query')" :class="{ 'active-tool': toolStates.query.isActive }" />
         <!-- 新增：渲染按钮 -->
-        <img src="/icons/渲染.png" alt="水库监测数据可视化渲染" title="水库监测数据可视化渲染" @click="activateRender" :class="{ 'active-tool': activeMapTool === 'render' }" />
-        <img src="/icons/识别要素.png" alt="识别要素" title="识别要素" @click="activateIdentifyFeature" :class="{ 'active-tool': activeMapTool === 'identifyFeature' }" />
+        <img src="/icons/渲染.png" alt="水库监测数据可视化渲染" title="水库监测数据可视化渲染" @click="smartToolToggle('render')" :class="{ 'active-tool': toolStates.render.isActive }" />
+        <img src="/icons/识别要素.png" alt="识别要素" title="识别要素" @click="smartToolToggle('identifyFeature')" :class="{ 'active-tool': toolStates.identifyFeature.isActive }" />
         <img 
           src="/icons/标注.png" 
           alt="标注" 
           title="标注" 
-          @click="activateAnnotation" 
+          @click="smartToolToggle('annotation')" 
+          :class="{ 'active-tool': toolStates.annotation.isActive }"
         />
         <img 
           src="/icons/左箭头.png" 
@@ -403,13 +400,13 @@
 
       
       <!-- 查询弹窗 -->
-      <div v-if="activeMapTool === 'query'" class="search-bar-modal" ref="queryPopup">
+      <div v-if="toolStates.query.isActive" class="search-bar-modal" ref="queryPopup">
         <div class="search-bar-container">
           <div class="search-header" @mousedown="startQueryPopupDrag" @touchstart="startQueryPopupDrag">
             <h3>图层查询</h3>
             <div class="search-header-controls">
               <span class="search-reset" @click="resetQueryPopupPosition" title="重置位置">↺</span>
-              <span class="search-close" @click="activeMapTool = ''">×</span>
+              <span class="search-close" @click="smartToolToggle('query')">×</span>
             </div>
           </div>
           
@@ -525,11 +522,14 @@
         </div>
       </div>
       <!-- 渲染对话框 -->
-      <div v-if="activeMapTool === 'render'" class="render-modal">
+      <div v-if="toolStates.render.isActive" class="render-modal" ref="renderModal">
         <div class="render-modal-content">
-          <div class="render-modal-header">
+          <div class="render-modal-header" @mousedown="startRenderModalDrag" @touchstart="startRenderModalDrag">
             <span>数据分级渲染</span>
-            <span class="render-modal-close" @click="activeMapTool = ''">×</span>
+            <div class="render-modal-controls">
+              <span class="render-modal-reset" @click="resetRenderModalPosition" title="重置位置">↺</span>
+              <span class="render-modal-close" @click="smartToolToggle('render')">×</span>
+            </div>
           </div>
           <div class="render-modal-body">
             <div class="render-row">
@@ -552,23 +552,12 @@
               </select>
             </div>
             
-            <!-- 分级预览 -->
-            <div class="grade-preview" v-if="gradeRanges.length > 0">
-              <h4>分级预览</h4>
-              <div class="grade-preview-items">
-                <div v-for="(grade, index) in gradeRanges" :key="index" class="grade-preview-item">
-                  <div class="grade-color-preview" :style="{ backgroundColor: grade.color }"></div>
-                  <div class="grade-range-text">
-                    <span class="grade-level">第{{ index + 1 }}级</span>
-                    <span class="grade-value">{{ grade.min }} - {{ grade.max }}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
+
             
             <div class="render-row">
               <button class="render-btn" @click="handleNaturalBreaksRender">渲染</button>
               <button class="render-reset-btn" @click="resetRender">重置</button>
+              
             </div>
             <div v-if="renderError" class="render-error">{{ renderError }}</div>
           </div>
@@ -849,7 +838,7 @@ const initMap = () => {
 
 // 加载GeoJSON数据（Beijing-GeoJson-Tzy目录）
 const loadGeoJSONData = async () => {
-  console.log('开始加载地理数据...')
+  console.log('=== 开始加载地理数据 ===')
   
   // 设置更短的超时时间（5秒）
   const timeout = 5000
@@ -866,6 +855,8 @@ const loadGeoJSONData = async () => {
     settlements: './Beijing-GeoJson-Tzy/居民地地名.json',
     monitoringPoints: './Beijing-GeoJson-Tzy/监测点.geojson'
   }
+  
+  console.log('数据文件配置:', dataFiles)
   
   let loadedCount = 0
   const totalFiles = Object.keys(dataFiles).length
@@ -890,9 +881,19 @@ const loadGeoJSONData = async () => {
       const data = await response.json()
       console.log(`${key}数据加载成功，要素数量:`, data.features ? data.features.length : '未知')
       
+      // 检查数据结构
+      if (data.features && data.features.length > 0) {
+        console.log(`  - 第一个要素属性:`, data.features[0].properties)
+        console.log(`  - 属性字段列表:`, Object.keys(data.features[0].properties))
+      }
+      
       // 创建图层
       const layer = createGeoJSONLayer(key, data)
       if (layer) {
+        console.log(`  - 图层创建成功:`, layer)
+        console.log(`  - 图层类型:`, layer.constructor.name)
+        console.log(`  - 是否有eachLayer方法:`, !!layer.eachLayer)
+        
         layerObjects[key] = layer
         hasSuccess = true
         
@@ -901,7 +902,12 @@ const loadGeoJSONData = async () => {
           if (key === 'beijingReservoirs') {
             layer.bringToFront()
           }
+          console.log(`  - 图层已添加到地图`)
+        } else {
+          console.log(`  - 图层未添加到地图（layers[${key}] = false）`)
         }
+      } else {
+        console.error(`  - 图层创建失败`)
       }
       
       loadedCount++
@@ -910,7 +916,7 @@ const loadGeoJSONData = async () => {
       console.log(`进度: ${loadedCount}/${totalFiles} (${loadingProgress.value}%)`)
       
     } catch (error) {
-      console.error(`加载${key}数据失败:`, error)
+      console.error(`❌ 加载${key}数据失败:`, error)
       loadedCount++
       // 即使失败也要更新进度
       loadingProgress.value = Math.round((loadedCount / totalFiles) * 100)
@@ -922,18 +928,21 @@ const loadGeoJSONData = async () => {
   
   // 关闭加载状态
   loading.value = false
-  console.log('数据加载完成，成功加载的图层数量:', Object.keys(layerObjects).length)
+  console.log('=== 数据加载完成 ===')
+  console.log('成功加载的图层数量:', Object.keys(layerObjects).length)
+  console.log('图层对象状态:', layerObjects)
   
   // 如果没有成功加载任何图层，显示基本地图
   if (!hasSuccess) {
-    console.warn('所有数据加载失败，显示基本地图')
+    console.warn('❌ 所有数据加载失败，显示基本地图')
     showBasicMap()
   } else {
     // 预计算地图完整边界
     try {
       calculateFullMapBounds()
+      console.log('✅ 地图边界计算完成')
     } catch (error) {
-      console.error('计算地图边界失败:', error)
+      console.error('❌ 计算地图边界失败:', error)
     }
   }
 }
@@ -1222,10 +1231,8 @@ const toggleLayer = (layerType) => {
 // 地图工具激活方法
 const activateZoomIn = () => {
   resetToolState()
-  activeMapTool.value = 'zoomIn'
   showZoomDropdown.value = false
   console.log('激活按点放大模式，等待用户单击')
-  console.log('当前activeMapTool值:', activeMapTool.value)
   
   // 强制更新DOM，确保CSS类正确应用
   nextTick(() => {
@@ -1258,10 +1265,8 @@ const activateZoomIn = () => {
 
 const activateZoomOut = () => {
   resetToolState()
-  activeMapTool.value = 'zoomOut'
   showZoomOutDropdown.value = false
   console.log('激活按点缩小模式，等待用户单击')
-  console.log('当前activeMapTool值:', activeMapTool.value)
   
   // 强制更新DOM，确保CSS类正确应用
   nextTick(() => {
@@ -1296,17 +1301,14 @@ const activateZoomOut = () => {
 const activateRectangleZoomOut = () => {
   console.log('=== 激活拉框缩小模式 ===')
   console.log('激活前的状态:', { 
-    activeMapTool: activeMapTool.value, 
     zoomMode: zoomMode.value,
     isDrawing: isDrawing.value 
   })
   
   resetToolState()
-  activeMapTool.value = 'rectangleZoomOut'
   showZoomOutDropdown.value = false
   
   console.log('激活后的状态:', { 
-    activeMapTool: activeMapTool.value, 
     zoomMode: zoomMode.value,
     isDrawing: isDrawing.value 
   })
@@ -1314,7 +1316,6 @@ const activateRectangleZoomOut = () => {
   // 设置绘制模式
   zoomMode.value = 'rectangle'
   console.log('设置zoomMode为rectangle后的状态:', { 
-    activeMapTool: activeMapTool.value, 
     zoomMode: zoomMode.value,
     isDrawing: isDrawing.value 
   })
@@ -1325,7 +1326,6 @@ const activateRectangleZoomOut = () => {
 
 const activatePan = () => {
   resetToolState()
-  activeMapTool.value = 'pan'
   console.log('激活平移模式')
   
   if (map.value) {
@@ -1432,7 +1432,6 @@ const setupMapEventListeners = () => {
 
 const activateSelectFeature = () => {
   resetToolState()
-  activeMapTool.value = 'selectFeature'
   console.log('激活要素选择模式')
   
   // 设置选择要素的鼠标样式
@@ -1448,7 +1447,6 @@ const activateSelectFeature = () => {
 
 const activateIdentifyFeature = () => {
   resetToolState()
-  activeMapTool.value = 'identifyFeature'
   console.log('激活要素识别模式')
   
   // 设置识别要素的鼠标样式
@@ -1908,7 +1906,6 @@ const getUpdatedLayerStyle = (layerType) => {
 // 查询和渲染工具激活方法
 const activateQuery = () => {
   resetToolState()
-  activeMapTool.value = 'query'
   console.log('激活查询模式')
   
   // 设置查询模式的鼠标样式
@@ -1924,7 +1921,6 @@ const activateQuery = () => {
 
 const activateRender = () => {
   resetToolState()
-  activeMapTool.value = 'render'
   console.log('激活渲染模式')
   
   // 设置渲染模式的鼠标样式
@@ -1940,7 +1936,6 @@ const activateRender = () => {
 
 const activateAnnotation = () => {
   resetToolState()
-  activeMapTool.value = 'annotation'
   annotationSystem.isActive = true
   console.log('激活标注模式')
   
@@ -2288,6 +2283,16 @@ const panelDragStart = reactive({
   top: 0
 })
 
+// 渲染面板拖拽相关变量
+const renderModal = ref(null)
+const isRenderModalDragging = ref(false)
+const renderModalDragStart = reactive({
+  x: 0,
+  y: 0,
+  left: 0,
+  top: 0
+})
+
 // 查询弹窗拖拽相关变量
 const isQueryPopupDragging = ref(false)
 const queryPopupDragStart = reactive({
@@ -2561,6 +2566,139 @@ const resetQueryPopupPosition = () => {
     
     // 恢复默认z-index
     popup.style.zIndex = '2001'
+  }
+}
+
+// 开始拖拽渲染面板
+const startRenderModalDrag = (e) => {
+  // 防止在关闭按钮和重置按钮上拖拽
+  if (e.target.closest('.render-modal-close') || e.target.closest('.render-modal-reset')) return
+  
+  isRenderModalDragging.value = true
+  
+  // 记录起始位置
+  if (e.type === 'mousedown') {
+    renderModalDragStart.x = e.clientX
+    renderModalDragStart.y = e.clientY
+  } else if (e.type === 'touchstart') {
+    renderModalDragStart.x = e.touches[0].clientX
+    renderModalDragStart.y = e.touches[0].clientY
+  }
+  
+  const modal = renderModal.value
+  if (modal) {
+    // 移除transform属性，使用绝对定位
+    modal.style.transform = 'none'
+    modal.style.transition = 'none'
+    modal.style.zIndex = '10000'
+    
+    // 获取当前面板的实际位置
+    const rect = modal.getBoundingClientRect()
+    renderModalDragStart.left = rect.left
+    renderModalDragStart.top = rect.top
+    
+    // 设置初始位置
+    modal.style.left = rect.left + 'px'
+    modal.style.top = rect.top + 'px'
+    
+    // 添加拖拽状态的CSS类
+    modal.classList.add('dragging')
+  }
+  
+  // 绑定拖拽事件
+  if (e.type === 'mousedown') {
+    document.addEventListener('mousemove', onRenderModalDrag)
+    document.addEventListener('mouseup', stopRenderModalDrag)
+  } else if (e.type === 'touchstart') {
+    document.addEventListener('touchmove', onRenderModalDrag, { passive: false })
+    document.addEventListener('touchend', stopRenderModalDrag)
+  }
+  
+  e.preventDefault()
+  e.stopPropagation()
+}
+
+// 渲染面板拖拽过程
+const onRenderModalDrag = (e) => {
+  if (!isRenderModalDragging.value) return
+  
+  const modal = renderModal.value
+  if (!modal) return
+  
+  let clientX, clientY
+  if (e.type === 'mousemove') {
+    clientX = e.clientX
+    clientY = e.clientY
+  } else if (e.type === 'touchmove') {
+    clientX = e.touches[0].clientX
+    clientY = e.touches[0].clientY
+  }
+  
+  // 计算新位置
+  const deltaX = clientX - renderModalDragStart.x
+  const deltaY = clientY - renderModalDragStart.y
+  
+  const newLeft = renderModalDragStart.left + deltaX
+  const newTop = renderModalDragStart.top + deltaY
+  
+  // 限制边界，防止拖拽超出视口
+  const maxLeft = window.innerWidth - modal.offsetWidth
+  const maxTop = window.innerHeight - modal.offsetHeight
+  
+  const clampedLeft = Math.max(0, Math.min(newLeft, maxLeft))
+  const clampedTop = Math.max(0, Math.min(newTop, maxTop))
+  
+  // 应用新位置
+  modal.style.left = clampedLeft + 'px'
+  modal.style.top = clampedTop + 'px'
+  
+  e.preventDefault()
+  e.stopPropagation()
+}
+
+// 停止拖拽渲染面板
+const stopRenderModalDrag = (e) => {
+  if (!isRenderModalDragging.value) return
+  
+  isRenderModalDragging.value = false
+  
+  const modal = renderModal.value
+  if (modal) {
+    // 恢复样式
+    modal.style.transition = 'all 0.3s ease'
+    modal.style.zIndex = '2002'
+    
+    // 移除拖拽状态的CSS类
+    modal.classList.remove('dragging')
+    
+    // 保持当前位置，不恢复transform
+  }
+  
+  // 移除事件监听器
+  document.removeEventListener('mousemove', onRenderModalDrag)
+  document.removeEventListener('mouseup', stopRenderModalDrag)
+  document.removeEventListener('touchmove', onRenderModalDrag)
+  document.removeEventListener('touchend', stopRenderModalDrag)
+  
+  e.preventDefault()
+  e.stopPropagation()
+}
+
+// 重置渲染面板位置
+const resetRenderModalPosition = () => {
+  const modal = renderModal.value
+  if (modal) {
+    // 移除拖拽状态
+    modal.classList.remove('dragging')
+    
+    // 恢复transform居中定位
+    modal.style.left = ''
+    modal.style.top = ''
+    modal.style.transform = 'translateX(-50%)'
+    modal.style.transition = 'all 0.3s ease'
+    
+    // 恢复默认z-index
+    modal.style.zIndex = '2002'
   }
 }
 
@@ -3055,6 +3193,161 @@ window.closeAnnotationPopup = (annotationId) => {
 // 新增：activeMapTool变量
 const activeMapTool = ref('')
 
+// 新增：工具状态管理对象，用于跟踪每个工具的开关状态
+const toolStates = reactive({
+  query: { isActive: false, panels: ['query'] },
+  render: { isActive: false, panels: ['render'] },
+  identifyFeature: { isActive: false, panels: ['identifyFeature'] },
+  annotation: { isActive: false, panels: ['annotation'] },
+  selectFeature: { isActive: false, panels: ['selectFeature'] },
+  pan: { isActive: false, panels: ['pan'] },
+  zoomIn: { isActive: false, panels: ['zoomIn'] },
+  zoomOut: { isActive: false, panels: ['zoomOut'] },
+  rectangleZoom: { isActive: false, panels: ['rectangleZoom'] },
+  rectangleZoomOut: { isActive: false, panels: ['rectangleZoomOut'] }
+})
+
+// 新增：智能工具切换函数
+const smartToolToggle = (toolName) => {
+  const toolState = toolStates[toolName]
+  
+  if (!toolState) {
+    console.error(`未知工具: ${toolName}`)
+    return
+  }
+  
+  // 如果工具已经激活，则关闭它和所有相关面板
+  if (toolState.isActive) {
+    console.log(`关闭工具: ${toolName}`)
+    deactivateTool(toolName)
+  } else {
+    // 如果工具未激活，则激活它
+    console.log(`激活工具: ${toolName}`)
+    activateTool(toolName)
+  }
+}
+
+// 新增：激活工具函数
+const activateTool = (toolName) => {
+  // 先关闭所有其他工具
+  Object.keys(toolStates).forEach(key => {
+    if (key !== toolName && toolStates[key].isActive) {
+      deactivateTool(key)
+    }
+  })
+  
+  // 激活指定工具
+  toolStates[toolName].isActive = true
+  activeMapTool.value = toolName
+  
+  // 根据工具类型执行相应的激活逻辑
+  switch (toolName) {
+    case 'query':
+      activateQuery()
+      break
+    case 'render':
+      activateRender()
+      break
+    case 'identifyFeature':
+      activateIdentifyFeature()
+      break
+    case 'annotation':
+      activateAnnotation()
+      break
+    case 'selectFeature':
+      activateSelectFeature()
+      break
+    case 'pan':
+      activatePan()
+      break
+    case 'zoomIn':
+      activateZoomIn()
+      showZoomDropdown.value = true
+      break
+    case 'zoomOut':
+      activateZoomOut()
+      showZoomOutDropdown.value = true
+      break
+    case 'rectangleZoom':
+      activateRectangleZoom()
+      showZoomDropdown.value = true
+      break
+    case 'rectangleZoomOut':
+      activateRectangleZoomOut()
+      showZoomOutDropdown.value = true
+      break
+    default:
+      console.warn(`未处理的工具类型: ${toolName}`)
+  }
+}
+
+// 新增：关闭工具函数
+const deactivateTool = (toolName) => {
+  const toolState = toolStates[toolName]
+  if (!toolState) return
+  
+  // 关闭工具状态
+  toolState.isActive = false
+  
+  // 如果关闭的是当前激活的工具，清空activeMapTool
+  if (activeMapTool.value === toolName) {
+    activeMapTool.value = ''
+  }
+  
+  // 根据工具类型执行相应的关闭逻辑
+  switch (toolName) {
+    case 'query':
+      // 关闭查询相关面板
+      break
+    case 'render':
+      // 关闭渲染相关面板
+      break
+    case 'identifyFeature':
+      // 关闭识别相关面板
+      break
+    case 'annotation':
+      // 关闭标注相关面板
+      annotationSystem.isActive = false
+      break
+    case 'selectFeature':
+      // 关闭选择相关面板
+      break
+    case 'pan':
+      // 关闭平移相关状态
+      isPanning.value = false
+      break
+    case 'zoomIn':
+    case 'zoomOut':
+    case 'rectangleZoom':
+    case 'rectangleZoomOut':
+      // 关闭缩放相关菜单
+      showZoomDropdown.value = false
+      showZoomOutDropdown.value = false
+      break
+  }
+  
+  // 重置地图状态
+  resetToolState()
+  
+  console.log(`工具已关闭: ${toolName}`)
+}
+
+// 新增：关闭所有工具和面板的函数
+const closeAllToolsAndPanels = () => {
+  Object.keys(toolStates).forEach(key => {
+    if (toolStates[key].isActive) {
+      deactivateTool(key)
+    }
+  })
+  
+  // 关闭其他面板
+  showMxdPanel.value = false
+  showReservoirImgPanel.value = false
+  showControlPanel.value = false
+  
+  console.log('所有工具和面板已关闭')
+}
+
 // 放大功能相关变量
 const showZoomDropdown = ref(false)
 const showZoomOutDropdown = ref(false)
@@ -3336,47 +3629,14 @@ const isValidZoomBounds = (bounds) => {
   }
 }
 
-// 处理地图点击事件
-const handleMapClick = (e) => {
-  console.log('地图点击事件触发:', e.latlng)
-  console.log('当前激活工具:', activeMapTool.value)
-  console.log('事件类型:', e.type)
-  console.log('事件目标:', e.target)
-  
-  // 根据当前激活的工具执行相应操作
-  switch (activeMapTool.value) {
-    case 'zoomIn':
-      console.log('执行按点放大，点击位置:', e.latlng)
-      handlePointZoom(e.latlng)
-      break
-    case 'zoomOut':
-      console.log('执行按点缩小，点击位置:', e.latlng)
-      handlePointZoomOut(e.latlng)
-      break
-    case 'selectFeature':
-      console.log('执行要素选择，点击位置:', e.latlng)
-      handleFeatureSelection(e)
-      break
-    case 'identifyFeature':
-      console.log('执行要素识别，点击位置:', e.latlng)
-      // 这里可以添加要素识别逻辑
-      break
-    case 'annotation':
-      console.log('执行标注功能，点击位置:', e.latlng)
-      handleAnnotation(e.latlng)
-      break
-    default:
-      console.log('当前工具不处理点击事件:', activeMapTool.value)
-      break
-  }
-}
+
 
 // 重置工具状态
 const resetToolState = () => {
   console.log('重置工具状态')
   
   // 如果之前是按点放大或缩小模式，恢复地图拖拽功能
-  if ((activeMapTool.value === 'zoomIn' || activeMapTool.value === 'zoomOut' || activeMapTool.value === 'rectangleZoomOut') && map.value) {
+  if ((toolStates.zoomIn.isActive || toolStates.zoomOut.isActive || toolStates.rectangleZoomOut.isActive) && map.value) {
     map.value.dragging.enable()
     console.log('已恢复地图拖拽功能')
   }
@@ -3390,9 +3650,9 @@ const resetToolState = () => {
   const mapElement = document.getElementById('editor-map')
   if (mapElement) {
     // 根据当前工具类型设置相应的鼠标样式
-    if (activeMapTool.value === 'selectFeature') {
+    if (toolStates.selectFeature.isActive) {
       mapElement.style.cursor = 'pointer'
-    } else if (activeMapTool.value === 'identifyFeature') {
+    } else if (toolStates.identifyFeature.isActive) {
       mapElement.style.cursor = 'help'
     } else {
       mapElement.style.cursor = 'default'
@@ -3419,7 +3679,7 @@ const resetToolState = () => {
     
     // 移除鼠标移动监听器
     const mouseMoveHandler = (e) => {
-      if (activeMapTool.value === 'zoomIn') {
+      if (toolStates.zoomIn.isActive) {
         const target = e.target
         if (target && target.style) {
           target.style.cursor = 'zoom-in'
@@ -3427,7 +3687,7 @@ const resetToolState = () => {
       }
     }
     const mouseMoveHandlerOut = (e) => {
-      if (activeMapTool.value === 'zoomOut') {
+      if (toolStates.zoomOut.isActive) {
         const target = e.target
         if (target && target.style) {
           target.style.cursor = 'zoom-out'
@@ -3441,89 +3701,7 @@ const resetToolState = () => {
   }
 }
 
-// 强制设置放大镜鼠标样式
-const forceSetZoomCursor = () => {
-  const mapElement = document.getElementById('editor-map')
-  if (mapElement) {
-    console.log('强制设置放大镜鼠标样式')
-    
-    // 设置地图容器的鼠标样式
-    mapElement.style.cursor = 'zoom-in'
-    
-    // 查找并设置所有Leaflet相关元素的鼠标样式
-    const leafletElements = mapElement.querySelectorAll('.leaflet-pane, .leaflet-overlay-pane, .leaflet-tile-pane, .leaflet-marker-pane, .leaflet-tooltip-pane, .leaflet-popup-pane')
-    leafletElements.forEach(element => {
-      element.style.cursor = 'zoom-in'
-      console.log('设置Leaflet元素鼠标样式:', element.className)
-    })
-    
-    // 设置地图容器的所有子元素的鼠标样式
-    const allChildren = mapElement.querySelectorAll('*')
-    allChildren.forEach(child => {
-      if (child.style && !child.classList.contains('custom-toolbar') && !child.classList.contains('control-panel')) {
-        child.style.cursor = 'zoom-in'
-      }
-    })
-    
-    // 添加鼠标移动监听器，确保在地图区域内始终保持放大镜样式
-    const mouseMoveHandler = (e) => {
-      if (activeMapTool.value === 'zoomIn') {
-        const target = e.target
-        if (target && target.style) {
-          target.style.cursor = 'zoom-in'
-        }
-      }
-    }
-    
-    // 移除之前的监听器（如果存在）
-    mapElement.removeEventListener('mousemove', mouseMoveHandler)
-    mapElement.addEventListener('mousemove', mouseMoveHandler)
-    
-    console.log('放大镜鼠标样式设置完成，已添加鼠标移动监听器')
-  }
-}
 
-// 强制设置缩小镜鼠标样式
-const forceSetZoomOutCursor = () => {
-  const mapElement = document.getElementById('editor-map')
-  if (mapElement) {
-    console.log('强制设置缩小镜鼠标样式')
-    
-    // 设置地图容器的鼠标样式
-    mapElement.style.cursor = 'zoom-out'
-    
-    // 查找并设置所有Leaflet相关元素的鼠标样式
-    const leafletElements = mapElement.querySelectorAll('.leaflet-pane, .leaflet-overlay-pane, .leaflet-tile-pane, .leaflet-marker-pane, .leaflet-tooltip-pane, .leaflet-popup-pane')
-    leafletElements.forEach(element => {
-      element.style.cursor = 'zoom-out'
-      console.log('设置Leaflet元素鼠标样式:', element.className)
-    })
-    
-    // 设置地图容器的所有子元素的鼠标样式
-    const allChildren = mapElement.querySelectorAll('*')
-    allChildren.forEach(child => {
-      if (child.style && !child.classList.contains('custom-toolbar') && !child.classList.contains('control-panel')) {
-        child.style.cursor = 'zoom-out'
-      }
-    })
-    
-    // 添加鼠标移动监听器，确保在地图区域内始终保持缩小镜样式
-    const mouseMoveHandler = (e) => {
-      if (activeMapTool.value === 'zoomOut') {
-        const target = e.target
-        if (target && target.style) {
-          target.style.cursor = 'zoom-out'
-        }
-      }
-    }
-    
-    // 移除之前的监听器（如果存在）
-    mapElement.removeEventListener('mousemove', mouseMoveHandler)
-    mapElement.addEventListener('mousemove', mouseMoveHandler)
-    
-    console.log('缩小镜鼠标样式设置完成，已添加鼠标移动监听器')
-  }
-}
 
 
 
@@ -3570,162 +3748,9 @@ const optimizePanPerformance = () => {
 
 
 
-// 处理按点放大
-const handlePointZoom = (latlng) => {
-  if (!map.value) {
-    console.error('地图未初始化')
-    return
-  }
-  
-  try {
-    console.log('开始按点放大，目标位置:', latlng)
-    
-    // 获取当前缩放级别
-    const currentZoom = map.value.getZoom()
-    const maxZoom = map.value.getMaxZoom()
-    
-    if (currentZoom < maxZoom) {
-      // 先移动到目标位置，然后放大
-      map.value.setView(latlng, currentZoom + 1, { 
-        animate: true,
-        duration: 0.5
-      })
-      
-      showZoomMessage('✅ 按点放大成功', 'success')
-      
-      // 添加到历史记录
-      setTimeout(() => {
-        const center = map.value.getCenter()
-        const zoom = map.value.getZoom()
-        addToHistory(center, zoom)
-      }, 600)
-      
-    } else {
-      // 如果已经是最大缩放级别，只移动到目标位置
-      map.value.setView(latlng, currentZoom, { 
-        animate: true,
-        duration: 0.5
-      })
-      
-      showZoomMessage('⚠️ 已达到最大缩放级别，已移动到目标位置', 'warning')
-      
-      // 添加到历史记录
-      setTimeout(() => {
-        const center = map.value.getCenter()
-        const zoom = map.value.getZoom()
-        addToHistory(center, zoom)
-      }, 600)
-    }
-    
-    // 按点放大完成后，恢复地图拖拽功能并重置工具状态
-    setTimeout(() => {
-      if (map.value) {
-        map.value.dragging.enable()
-        console.log('按点放大完成，已恢复地图拖拽功能')
-      }
-      resetToolState()
-    }, 1000)
-    
-  } catch (error) {
-    console.error('按点放大失败:', error)
-    showZoomMessage('❌ 按点放大失败', 'warning')
-    
-    // 出错时也要恢复地图拖拽功能
-    if (map.value) {
-      map.value.dragging.enable()
-    }
-    resetToolState()
-  }
-}
 
-// 处理按点缩小
-const handlePointZoomOut = (latlng) => {
-  if (!map.value) {
-    console.error('地图未初始化')
-    return
-  }
-  
-  try {
-    console.log('开始按点缩小，目标位置:', latlng)
-    
-    // 获取当前缩放级别
-    const currentZoom = map.value.getZoom()
-    const minZoom = map.value.getMinZoom()
-    
-    if (currentZoom > minZoom) {
-      // 先移动到目标位置，然后缩小
-      map.value.setView(latlng, currentZoom - 1, { 
-        animate: true,
-        duration: 0.5
-      })
-      
-      showZoomMessage('✅ 按点缩小成功', 'success')
-      
-      // 添加到历史记录
-      setTimeout(() => {
-        const center = map.value.getCenter()
-        const zoom = map.value.getZoom()
-        addToHistory(center, zoom)
-      }, 600)
-      
-    } else {
-      // 如果已经是最小缩放级别，只移动到目标位置
-      map.value.setView(latlng, currentZoom, { 
-        animate: true,
-        duration: 0.5
-      })
-      
-      showZoomMessage('⚠️ 已达到最小缩放级别，已移动到目标位置', 'warning')
-      
-      // 添加到历史记录
-      setTimeout(() => {
-        const center = map.value.getCenter()
-        const zoom = map.value.getZoom()
-        addToHistory(center, zoom)
-      }, 600)
-    }
-    
-    // 按点缩小完成后，恢复地图拖拽功能并重置工具状态
-    setTimeout(() => {
-      if (map.value) {
-        map.value.dragging.enable()
-        console.log('按点缩小完成，已恢复地图拖拽功能')
-      }
-      resetToolState()
-    }, 1000)
-    
-  } catch (error) {
-    console.error('按点缩小失败:', error)
-    showZoomMessage('❌ 按点缩小失败', 'warning')
-    
-    // 出错时也要恢复地图拖拽功能
-    if (map.value) {
-      map.value.dragging.enable()
-    }
-    resetToolState()
-  }
-}
 
-// 显示缩放提示信息
-const showZoomMessage = (message, type = 'info') => {
-  // 创建提示元素
-  const messageDiv = document.createElement('div')
-  messageDiv.className = `zoom-message zoom-message-${type}`
-  messageDiv.textContent = message
-  
-  // 添加到地图容器
-  const mapContainer = document.getElementById('editor-map')
-  if (mapContainer) {
-    mapContainer.appendChild(messageDiv)
-    
-    // 3秒后自动移除
-    setTimeout(() => {
-      if (messageDiv.parentNode) {
-        messageDiv.parentNode.removeChild(messageDiv)
-      }
-    }, 3000)
-  }
-}
+
 
 // 键盘事件处理
 const handleKeyDown = (e) => {
@@ -3764,13 +3789,11 @@ const activateRectangleZoom = () => {
   }
   
   resetToolState()
-  activeMapTool.value = 'rectangleZoom'
   zoomMode.value = 'rectangle'
   showZoomDropdown.value = false
   showZoomOutDropdown.value = false
   
   console.log('启动绘制模式前的状态:', { 
-    activeMapTool: activeMapTool.value,
     zoomMode: zoomMode.value 
   })
   
@@ -3779,110 +3802,11 @@ const activateRectangleZoom = () => {
 
 
 
-const startDrawingMode = () => {
-  console.log('开始绘制模式:', { 
-    map: !!map.value, 
-    zoomMode: zoomMode.value,
-    isDrawing: isDrawing.value 
-  })
-  
-  if (!map.value) {
-    console.error('地图未初始化')
-    showZoomMessage('❌ 地图未初始化', 'warning')
-    return
-  }
-  
-  try {
-    // 先清理之前的绘制状态，但不重置activeMapTool
-    isDrawing.value = false
-    zoomMode.value = ''
-    
-    // 重新启用地图拖拽功能
-    if (map.value) {
-      map.value.dragging.enable()
-    }
-    
-    // 清除绘制图层
-    if (drawLayer.value) {
-      map.value.removeLayer(drawLayer.value)
-      drawLayer.value = null
-    }
-    
-    // 移除地图事件监听器
-    map.value.off('mousedown')
-    map.value.off('mousemove')
-    map.value.off('mouseup')
-    
-    // 移除键盘事件监听器
-    document.removeEventListener('keydown', handleKeyDown)
-    
-    // 重新绑定地图点击事件监听器
-    if (map.value) {
-      map.value.off('click')
-      map.value.on('click', handleMapClick)
-    }
-    
-    isDrawing.value = true
-    console.log('isDrawing设置为true')
-    
-    // 禁用地图拖拽功能，让鼠标事件能够用于绘制
-    map.value.dragging.disable()
-    
-    // 暂时移除地图点击事件监听器，避免与绘制事件冲突
-    map.value.off('click')
-    // 同时移除按点放大和缩小的点击事件监听器
-    map.value.off('click', handleMapClick)
-    
-    // 清除之前的绘制图层
-    if (drawLayer.value) {
-      map.value.removeLayer(drawLayer.value)
-    }
-    
-    // 创建新的绘制图层
-    drawLayer.value = L.layerGroup().addTo(map.value)
-    
-    console.log('绘制图层创建成功:', drawLayer.value)
-    
-    // 显示绘制提示
-    const modeName = getZoomModeName()
-    showZoomMessage(`开始${modeName}绘制，按ESC键取消`, 'info')
-    
-    // 设置矩形绘制工具
-    console.log('当前zoomMode:', zoomMode.value)
-    
-    if (zoomMode.value === 'rectangle') {
-      console.log('设置矩形绘制')
-      setupRectangleDrawing()
-    } else {
-      console.error('未知的绘制模式:', zoomMode.value)
-      // 强制设置为矩形模式
-      zoomMode.value = 'rectangle'
-      setupRectangleDrawing()
-    }
-    
-    // 添加ESC键取消绘制功能
-    document.addEventListener('keydown', handleKeyDown)
-    
-  } catch (error) {
-    console.error('启动绘制模式失败:', error)
-    showZoomMessage('❌ 启动绘制模式失败', 'warning')
-    finishDrawing()
-  }
-}
 
-// 获取缩放模式的中文名称
-const getZoomModeName = () => {
-  const modeNames = {
-    'rectangle': activeMapTool.value === 'rectangleZoomOut' ? '矩形框缩小' : '矩形框放大'
-  }
-  return modeNames[zoomMode.value] || '未知'
-}
 
-// 取消绘制
-const cancelDrawing = () => {
-  finishDrawing()
-  showZoomMessage('❌ 已取消绘制', 'warning')
-}
+
+
+
 
 const setupRectangleDrawing = () => {
   console.log('设置矩形绘制模式')
@@ -4040,46 +3964,6 @@ const setupRectangleDrawing = () => {
   }
 }
 
-
-
-
-
-const finishDrawing = () => {
-  console.log('finishDrawing被调用，当前activeMapTool:', activeMapTool.value)
-  isDrawing.value = false
-  // 不要立即重置activeMapTool，让缩放方法执行完成后再重置
-  // activeMapTool.value = ''
-  zoomMode.value = ''
-  
-  // 重新启用地图拖拽功能
-  if (map.value) {
-    map.value.dragging.enable()
-  }
-  
-  // 清除绘制图层
-  if (drawLayer.value) {
-    map.value.removeLayer(drawLayer.value)
-    drawLayer.value = null
-  }
-  
-  // 移除地图事件监听器
-  map.value.off('mousedown')
-  map.value.off('mousemove')
-  map.value.off('mouseup')
-  
-  // 移除键盘事件监听器
-  document.removeEventListener('keydown', handleKeyDown)
-  
-  // 重新绑定地图点击事件监听器
-  if (map.value) {
-    map.value.off('click')
-    map.value.on('click', handleMapClick)
-    console.log('地图点击事件监听器已重新绑定，支持按点放大和缩小功能')
-  }
-  
-  console.log('绘制模式已清理，地图点击事件已重新绑定')
-}
-
 const searchText = ref('')
 const searchError = ref('')
 const selectedQueryLayer = ref('monitoringPoints')
@@ -4227,7 +4111,7 @@ const handleSearch = () => {
             reservoirImgUrl.value = `/reservoir-images/${name}.jpg`
             reservoirImgName.value = name
             
-            // 保存水库的属性数据，用于水库参数面板显示
+            // 保存水库的属性数据，用于水库基本信息面板显示
             currentReservoirProps.value = props
             console.log('保存水库属性数据:', props)
             
@@ -4354,21 +4238,29 @@ const formatPropertyValue = (value) => {
   return value.toString()
 }
 
-// 获取水库参数字段配置
+// 获取水库基本信息字段配置
 const getReservoirParamFields = () => {
   return [
     { key: '库名', label: '库名' },
     { key: '多年平均库水位', label: '多年平均库水位' },
     { key: '多年平均蓄水量', label: '多年平均蓄水量' },
-    { key: '多年日平均入库径流', label: '多年日平均入库径流' },
-    { key: '多年日平均出库径流', label: '多年日平均出库径流' },
+    { key: '多年日平均入库流量', label: '多年日平均入库径流' },
+    { key: '多年日平均出库流量', label: '多年日平均出库径流' },
     { key: '总库容', label: '总库容' },
     { key: '汛限水位', label: '汛限水位' }
   ]
 }
 
-// 格式化水库参数值（添加单位）
+// 格式化水库基本信息值（添加单位）
 const formatReservoirParamValue = (key, value) => {
+  // 特殊处理密云水库的多年日平均入库流量和出库流量
+  if (key === '多年日平均入库流量' && reservoirImgName.value === '密云水库') {
+    return '73.42 万立方米'
+  }
+  if (key === '多年日平均出库流量' && reservoirImgName.value === '密云水库') {
+    return '69.12 万立方米'
+  }
+  
   if (value === null || value === undefined || value === '') {
     return '暂无数据'
   }
@@ -4383,8 +4275,8 @@ const formatReservoirParamValue = (key, value) => {
     case '多年平均蓄水量':
     case '总库容':
       return value.toString() + ' 万立方米'
-    case '多年日平均入库径流':
-    case '多年日平均出库径流':
+    case '多年日平均入库流量':
+    case '多年日平均出库流量':
       return value.toString() + ' m³/s'
     default:
       return value.toString()
@@ -4408,7 +4300,7 @@ const getParamsPanelTitle = () => {
   if (currentQueryLayer.value === 'monitoringPoints') {
     return '监测点参数详情'
   } else if (currentQueryLayer.value === 'beijingReservoirs') {
-    return '水库参数详情'
+    return '水库基本信息详情'
   } else {
     return '参数详情'
   }
@@ -4462,12 +4354,104 @@ const formatMonitoringPointValue = (key, value) => {
 
 
 
-// 搜索水库视频（备用方案）
-const searchReservoirVideo = () => {
+// 播放水库视频
+const playReservoirVideo = () => {
+  console.log('playReservoirVideo 函数被调用')
+  console.log('当前水库名称:', reservoirImgName.value)
+  
   if (reservoirImgName.value === '密云水库') {
-    // 使用百度视频搜索页面
-    const searchUrl = `https://v.baidu.com/search?word=密云水库`
-    window.open(searchUrl, '_blank', 'width=1000,height=700')
+    console.log('开始创建视频播放模态框')
+    // 播放项目中的视频文件
+    const videoPath = '/videos/密云水库.mp4'
+    
+    // 创建模态框容器
+    const modal = document.createElement('div')
+    modal.style.position = 'fixed'
+    modal.style.top = '0'
+    modal.style.left = '0'
+    modal.style.width = '100%'
+    modal.style.height = '100%'
+    modal.style.backgroundColor = 'rgba(0, 0, 0, 0.8)'
+    modal.style.display = 'flex'
+    modal.style.justifyContent = 'center'
+    modal.style.alignItems = 'center'
+    modal.style.zIndex = '10000'
+    
+    // 创建视频容器
+    const videoContainer = document.createElement('div')
+    videoContainer.style.backgroundColor = 'white'
+    videoContainer.style.padding = '20px'
+    videoContainer.style.borderRadius = '8px'
+    videoContainer.style.position = 'relative'
+    videoContainer.style.boxShadow = '0 4px 20px rgba(0, 0, 0, 0.3)'
+    videoContainer.style.maxWidth = '90vw'
+    videoContainer.style.maxHeight = '90vh'
+    videoContainer.style.overflow = 'auto'
+    
+    // 添加加载状态提示
+    const loadingMsg = document.createElement('div')
+    loadingMsg.innerHTML = `
+      <div style="text-align: center; padding: 20px;">
+        <h3>正在加载视频...</h3>
+        <p>请稍候</p>
+      </div>
+    `
+    videoContainer.appendChild(loadingMsg)
+    
+    // 创建视频元素并播放
+    const video = document.createElement('video')
+    video.src = videoPath
+    video.controls = true
+    video.style.width = '100%'
+    video.style.maxWidth = '800px'
+    video.style.height = 'auto'
+    
+    // 视频加载完成后移除加载提示
+    video.addEventListener('loadeddata', () => {
+      if (loadingMsg.parentNode) {
+        loadingMsg.parentNode.removeChild(loadingMsg)
+      }
+    })
+    
+    // 添加关闭按钮
+    const closeBtn = document.createElement('button')
+    closeBtn.innerHTML = '×'
+    closeBtn.style.position = 'absolute'
+    closeBtn.style.top = '10px'
+    closeBtn.style.right = '15px'
+    closeBtn.style.background = 'none'
+    closeBtn.style.border = 'none'
+    closeBtn.style.fontSize = '24px'
+    closeBtn.style.cursor = 'pointer'
+    closeBtn.style.color = '#666'
+    closeBtn.onclick = () => {
+      document.body.removeChild(modal)
+    }
+    
+    // 组装模态框
+    videoContainer.appendChild(closeBtn)
+    videoContainer.appendChild(video)
+    modal.appendChild(videoContainer)
+    
+    // 添加到页面并播放
+    document.body.appendChild(modal)
+    
+    // 尝试播放视频
+    video.play().catch(error => {
+      console.log('视频播放失败，可能是本地文件路径问题:', error)
+      // 如果播放失败，显示提示信息
+      const errorMsg = document.createElement('div')
+      errorMsg.innerHTML = `
+        <div style="text-align: center; padding: 20px;">
+          <h3>视频播放失败</h3>
+          <p>无法播放视频文件: ${videoPath}</p>
+          <p>请确保视频文件存在且路径正确</p>
+          <button onclick="this.parentElement.parentElement.parentElement.remove()" style="margin-top: 10px; padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">确定</button>
+        </div>
+      `
+      videoContainer.innerHTML = ''
+      videoContainer.appendChild(errorMsg)
+    })
   }
 }
 
@@ -4758,33 +4742,6 @@ const colorSchemes = {
   6: ['#ff4d4f', '#ff7a45', '#ffd700', '#bae637', '#73d13d', '#52c41a']
 }
 
-// 图层切换处理函数
-const onLayerChange = () => {
-  // 根据图层类型设置默认字段
-  if (selectedRenderLayer.value === 'monitoringPoints') {
-    renderField.value = '年平均氨氮'
-  } else if (selectedRenderLayer.value === 'beijingReservoirs') {
-    renderField.value = '总库容'
-  }
-  // 清除之前的分级结果
-  gradeRanges.value = []
-  showLegend.value = false
-}
-
-// 字段变化处理函数
-const onFieldChange = () => {
-  // 清除之前的分级结果
-  gradeRanges.value = []
-  showLegend.value = false
-}
-
-// 分级个数变化处理函数
-const onGradeCountChange = () => {
-  // 清除之前的分级结果
-  gradeRanges.value = []
-  showLegend.value = false
-}
-
 // 自然断点法算法实现
 const jenksNaturalBreaks = (data, numClasses) => {
   if (data.length === 0 || numClasses <= 0 || numClasses > data.length) {
@@ -4797,8 +4754,8 @@ const jenksNaturalBreaks = (data, numClasses) => {
   // 如果分级数等于数据长度，每个数据点一个级别
   if (numClasses >= data.length) {
     return sortedData.map((value, index) => ({
-      min: value,
-      max: value,
+      min: parseFloat(value.toFixed(2)),
+      max: parseFloat(value.toFixed(2)),
       color: colorSchemes[Math.min(numClasses, 6)][index] || '#999999'
     }))
   }
@@ -4874,8 +4831,122 @@ const jenksNaturalBreaks = (data, numClasses) => {
   const result = []
   for (let i = 0; i < numClasses; i++) {
     result.push({
-      min: breakpoints[i],
-      max: breakpoints[i + 1],
+      min: parseFloat(breakpoints[i].toFixed(2)),
+      max: parseFloat(breakpoints[i + 1].toFixed(2)),
+      color: colorSchemes[numClasses][i] || '#999999'
+    })
+  }
+  
+  return result
+}
+
+// 新增：等量分级算法实现
+const equalIntervalClassification = (data, numClasses) => {
+  if (data.length === 0 || numClasses <= 0 || numClasses > data.length) {
+    return []
+  }
+  
+  // 对数据进行排序
+  const sortedData = [...data].sort((a, b) => a - b)
+  
+  // 如果分级数等于数据长度，每个数据点一个级别
+  if (numClasses >= data.length) {
+    return sortedData.map((value, index) => ({
+      min: parseFloat(value.toFixed(2)),
+      max: parseFloat(value.toFixed(2)),
+      color: colorSchemes[Math.min(numClasses, 6)][index] || '#999999'
+    }))
+  }
+  
+  // 计算数据范围
+  const min = sortedData[0]
+  const max = sortedData[sortedData.length - 1]
+  const range = max - min
+  
+  // 计算等间距
+  const interval = range / numClasses
+  
+  // 构建分级结果
+  const result = []
+  for (let i = 0; i < numClasses; i++) {
+    const classMin = min + i * interval
+    const classMax = min + (i + 1) * interval
+    
+    result.push({
+      min: parseFloat(classMin.toFixed(2)),
+      max: parseFloat(classMax.toFixed(2)),
+      color: colorSchemes[numClasses][i] || '#999999'
+    })
+  }
+  
+  return result
+}
+
+// 图层切换处理函数
+const onLayerChange = () => {
+  // 根据图层类型设置默认字段
+  if (selectedRenderLayer.value === 'monitoringPoints') {
+    renderField.value = '年平均氨氮'
+  } else if (selectedRenderLayer.value === 'beijingReservoirs') {
+    renderField.value = '总库容'
+  }
+  // 清除之前的分级结果
+  gradeRanges.value = []
+  showLegend.value = false
+}
+
+// 字段变化处理函数
+const onFieldChange = () => {
+  // 清除之前的分级结果
+  gradeRanges.value = []
+  showLegend.value = false
+}
+
+// 分级个数变化处理函数
+const onGradeCountChange = () => {
+  // 清除之前的分级结果
+  gradeRanges.value = []
+  showLegend.value = false
+}
+
+// 新增：等量分级算法实现（确保每个级别数量均衡）
+const equalCountClassification = (data, numClasses) => {
+  if (data.length === 0 || numClasses <= 0 || numClasses > data.length) {
+    return []
+  }
+  
+  // 对数据进行排序
+  const sortedData = [...data].sort((a, b) => a - b)
+  
+  // 如果分级数等于数据长度，每个数据点一个级别
+  if (numClasses >= data.length) {
+    return sortedData.map((value, index) => ({
+      min: parseFloat(value.toFixed(2)),
+      max: parseFloat(value.toFixed(2)),
+      color: colorSchemes[Math.min(numClasses, 6)][index] || '#999999'
+    }))
+  }
+  
+  // 计算每个级别应该包含的数据点数量
+  const pointsPerClass = Math.ceil(data.length / numClasses)
+  
+  // 构建分级结果
+  const result = []
+  for (let i = 0; i < numClasses; i++) {
+    const startIndex = i * pointsPerClass
+    let endIndex = Math.min((i + 1) * pointsPerClass, data.length)
+    
+    // 如果这是最后一个级别，确保包含所有剩余数据
+    if (i === numClasses - 1) {
+      endIndex = data.length
+    }
+    
+    const classMin = sortedData[startIndex]
+    const classMax = sortedData[endIndex - 1]
+    
+    result.push({
+      min: parseFloat(classMin.toFixed(2)),
+      max: parseFloat(classMax.toFixed(2)),
       color: colorSchemes[numClasses][i] || '#999999'
     })
   }
@@ -4886,50 +4957,114 @@ const jenksNaturalBreaks = (data, numClasses) => {
 // 数据分级渲染处理
 const handleNaturalBreaksRender = () => {
   renderError.value = ''
+  console.log('=== 开始分级渲染 ===')
+  console.log('1. 基本参数检查:')
+  console.log('  - 选中的图层:', selectedRenderLayer.value)
+  console.log('  - 选中的字段:', renderField.value)
+  console.log('  - 分级数量:', gradeCount.value)
+  
+  // 添加调试信息
+  console.log('2. 图层对象检查:')
+  console.log('  - 当前图层对象:', layerObjects)
+  console.log('  - 选中的渲染图层:', selectedRenderLayer.value)
+  console.log('  - 图层是否存在:', !!layerObjects[selectedRenderLayer.value])
+  console.log('  - 图层对象类型:', typeof layerObjects[selectedRenderLayer.value])
+  
   const layer = layerObjects[selectedRenderLayer.value]
   if (!layer) {
-    renderError.value = `${selectedRenderLayer.value === 'monitoringPoints' ? '监测点' : '水库'}图层未加载`
+    const errorMsg = `${selectedRenderLayer.value === 'monitoringPoints' ? '监测点' : '水库'}图层未加载`
+    console.error('❌ 渲染失败:', errorMsg)
+    renderError.value = errorMsg
     return
   }
+  
   if (!renderField.value) {
-    renderError.value = '请选择字段'
+    const errorMsg = '请选择字段'
+    console.error('❌ 渲染失败:', errorMsg)
+    renderError.value = errorMsg
     return
   }
   
   try {
+    console.log('3. 开始收集图层数据...')
     // 收集图层数据
     const dataValues = []
     const layerFeatures = []
     
+    // 检查图层是否有要素
+    console.log('  - 检查图层方法:')
+    console.log('    * 图层对象:', layer)
+    console.log('    * 是否有eachLayer方法:', !!layer.eachLayer)
+    console.log('    * 图层类型:', layer.constructor.name)
+    console.log('    * 图层属性:', Object.keys(layer))
+    
+    if (!layer.eachLayer) {
+      const errorMsg = '图层对象没有eachLayer方法'
+      console.error('❌ 渲染失败:', errorMsg)
+      renderError.value = errorMsg
+      return
+    }
+    
+    console.log('  - 开始遍历图层要素...')
+    let featureCount = 0
+    let validFeatureCount = 0
+    
     layer.eachLayer(l => {
+      featureCount++
       const props = l.feature && l.feature.properties
       if (props && props[renderField.value] !== undefined && props[renderField.value] !== null) {
         const value = parseFloat(props[renderField.value])
         if (!isNaN(value)) {
           dataValues.push(value)
           layerFeatures.push(l)
+          validFeatureCount++
         }
       }
     })
     
+    console.log('4. 数据收集结果:')
+    console.log('  - 遍历的要素总数:', featureCount)
+    console.log('  - 有效数据值数量:', dataValues.length)
+    console.log('  - 收集到的要素数量:', layerFeatures.length)
+    console.log('  - 数据值范围:', dataValues.length > 0 ? `${Math.min(...dataValues)} - ${Math.max(...dataValues)}` : '无数据')
+    console.log('  - 样本数据值:', dataValues.slice(0, 5))
+    
     if (dataValues.length === 0) {
-      renderError.value = '所选字段没有有效的数值数据'
+      const errorMsg = '所选字段没有有效的数值数据'
+      console.error('❌ 渲染失败:', errorMsg)
+      renderError.value = errorMsg
       return
     }
     
-    // 使用自然断点法计算分级
-    gradeRanges.value = jenksNaturalBreaks(dataValues, gradeCount.value)
-    
-    if (gradeRanges.value.length === 0) {
-      renderError.value = '分级计算失败'
+    if (dataValues.length < gradeCount.value) {
+      const errorMsg = `数据点数量(${dataValues.length})少于分级数量(${gradeCount.value})，无法进行等量分级`
+      console.error('❌ 渲染失败:', errorMsg)
+      renderError.value = errorMsg
       return
     }
+    
+    console.log('5. 开始计算等量分级...')
+    // 使用等量分级算法计算分级（确保每个级别数量均衡）
+    const classificationResult = equalCountClassification(dataValues, gradeCount.value)
+    console.log('  - 分级算法结果:', classificationResult)
+    
+    if (!classificationResult || classificationResult.length === 0) {
+      const errorMsg = '分级计算失败'
+      console.error('❌ 渲染失败:', errorMsg)
+      renderError.value = errorMsg
+      return
+    }
+    
+    gradeRanges.value = classificationResult
+    console.log('6. 分级结果已保存:', gradeRanges.value)
     
     // 统计每个级别的要素数量
     const gradeCounts = new Array(gradeCount.value).fill(0)
     
+    console.log('7. 开始应用分级渲染...')
     // 应用分级渲染
-    layerFeatures.forEach(l => {
+    let styledCount = 0
+    layerFeatures.forEach((l, index) => {
       const props = l.feature.properties
       const value = parseFloat(props[renderField.value])
       
@@ -4947,28 +5082,37 @@ const handleNaturalBreaksRender = () => {
       // 应用样式
       if (gradeIndex >= 0) {
         const grade = gradeRanges.value[gradeIndex]
-        if (selectedRenderLayer.value === 'monitoringPoints') {
-          l.setStyle({
-            fillColor: grade.color,
-            color: grade.color,
-            fillOpacity: 0.95,
-            opacity: 1,
-            weight: 2
-          })
-        } else if (selectedRenderLayer.value === 'beijingReservoirs') {
-          l.setStyle({
-            fillColor: grade.color,
-            color: grade.color,
-            fillOpacity: 0.8,
-            opacity: 0.9,
-            weight: 1.5
-          })
+        try {
+          if (selectedRenderLayer.value === 'monitoringPoints') {
+            l.setStyle({
+              fillColor: grade.color,
+              color: grade.color,
+              fillOpacity: 0.95,
+              opacity: 1,
+              weight: 2
+            })
+          } else if (selectedRenderLayer.value === 'beijingReservoirs') {
+            l.setStyle({
+              fillColor: grade.color,
+              color: grade.color,
+              fillOpacity: 0.8,
+              opacity: 0.9,
+              weight: 1.5
+            })
+          }
+          styledCount++
+        } catch (styleError) {
+          console.error(`样式应用失败 (要素 ${index}):`, styleError)
         }
       }
     })
     
+    console.log('8. 渲染完成统计:')
+    console.log('  - 成功应用样式的要素数量:', styledCount)
+    console.log('  - 分级统计:', gradeCounts)
+    
     // 更新图例
-    legendTitle.value = `${renderField.value} 分级`
+    legendTitle.value = `${renderField.value} 等量分级`
     legendGrades.value = gradeRanges.value.map((grade, index) => ({
       ...grade,
       count: gradeCounts[index]
@@ -4977,10 +5121,22 @@ const handleNaturalBreaksRender = () => {
     // 显示图例
     showLegend.value = true
     
-    renderError.value = `✅ 分级渲染完成，共${dataValues.length}个要素`
+    // 计算分级效果统计信息
+    const totalFeatures = dataValues.length
+    const expectedCount = Math.ceil(totalFeatures / gradeCount.value)
+    const actualCounts = gradeCounts
+    const countVariance = actualCounts.reduce((sum, count) => {
+      return sum + Math.pow(count - expectedCount, 2)
+    }, 0) / gradeCount.value
+    const countStdDev = Math.sqrt(countVariance)
+    
+    const successMsg = `✅ 等量分级渲染完成，共${totalFeatures}个要素，每个级别期望${expectedCount}个，标准差${countStdDev.toFixed(2)}`
+    console.log('🎉 渲染成功:', successMsg)
+    renderError.value = successMsg
     
   } catch (error) {
-    console.error('分级渲染失败:', error)
+    console.error('❌ 分级渲染失败:', error)
+    console.error('错误堆栈:', error.stack)
     renderError.value = '分级渲染失败: ' + error.message
   }
 }
@@ -4996,6 +5152,10 @@ const resetRender = () => {
   showLegend.value = false
   renderError.value = ''
 }
+
+
+
+
 
 onMounted(() => {
   console.log('MapEditor组件已挂载，开始初始化...')
@@ -5270,6 +5430,373 @@ const generateFieldAnnotations = () => {
 
 // 新增：要素选择相关函数
 
+// 创建要素高亮图层
+const createFeatureHighlight = (clickedFeature) => {
+  try {
+    const { type, feature, layer } = clickedFeature
+    
+    if (type === 'monitoringPoints' || type === 'settlements') {
+      // 点要素高亮 - 从feature的geometry获取坐标
+      const coordinates = feature.geometry.coordinates
+      const latlng = L.latLng(coordinates[1], coordinates[0])
+      return L.circleMarker(latlng, {
+        radius: 12,
+        fillColor: '#ff0000',
+        color: '#ffffff',
+        weight: 3,
+        opacity: 1,
+        fillOpacity: 0.8
+      })
+    } else if (type === 'waterLines') {
+      // 线要素高亮 - 从feature的geometry获取坐标
+      const coordinates = feature.geometry.coordinates
+      const latlngs = coordinates.map(coord => L.latLng(coord[1], coord[0]))
+      return L.polyline(latlngs, {
+        color: '#ff0000',
+        weight: 6,
+        opacity: 1
+      })
+    } else {
+      // 面要素高亮 - 从feature的geometry获取坐标
+      const coordinates = feature.geometry.coordinates[0] // 取第一个环
+      const latlngs = coordinates.map(coord => L.latLng(coord[1], coord[0]))
+      return L.polygon(latlngs, {
+        fillColor: '#ffcccc',
+        color: '#ff0000',
+        weight: 3,
+        fillOpacity: 0.6
+      })
+    }
+  } catch (error) {
+    console.error('创建要素高亮图层失败:', error)
+    return null
+  }
+}
+
+// 清除所有要素选择
+const clearAllFeatureSelections = () => {
+  selectedFeatures.value.clear()
+  
+  // 移除所有高亮图层
+  featureHighlightLayers.value.forEach(highlightLayer => {
+    if (map.value && highlightLayer) {
+      map.value.removeLayer(highlightLayer)
+    }
+  })
+  featureHighlightLayers.value.clear()
+  
+  console.log('所有要素选择已清除')
+}
+
+// 处理地图点击事件
+const handleMapClick = (e) => {
+  if (!map.value) return
+  
+  console.log('地图点击事件:', e.latlng)
+  
+  // 根据当前激活的工具执行不同的操作
+  switch (activeMapTool.value) {
+    case 'zoomIn':
+      handleZoomInClick(e.latlng)
+      break
+    case 'zoomOut':
+      handleZoomOutClick(e.latlng)
+      break
+    case 'selectFeature':
+      handleFeatureSelection(e)
+      break
+    case 'identifyFeature':
+      handleFeatureIdentification(e)
+      break
+    case 'annotation':
+      handleAnnotation(e.latlng)
+      break
+    default:
+      // 默认情况下不执行任何操作
+      break
+  }
+}
+
+// 开始绘制模式
+const startDrawingMode = () => {
+  console.log('开始绘制模式:', { 
+    map: !!map.value, 
+    zoomMode: zoomMode.value,
+    isDrawing: isDrawing.value 
+  })
+  
+  if (!map.value) {
+    console.error('地图未初始化')
+    showZoomMessage('❌ 地图未初始化', 'warning')
+    return
+  }
+  
+  try {
+    // 先清理之前的绘制状态，但不重置activeMapTool
+    isDrawing.value = false
+    zoomMode.value = ''
+    
+    // 重新启用地图拖拽功能
+    if (map.value) {
+      map.value.dragging.enable()
+    }
+    
+    // 清理之前的绘制图层
+    if (drawLayer.value) {
+      map.value.removeLayer(drawLayer.value)
+      drawLayer.value = null
+    }
+    
+    // 移除之前的事件监听器
+    map.value.off('mousedown')
+    map.value.off('mousemove')
+    map.value.off('mouseup')
+    
+    // 移除键盘事件监听器
+    document.removeEventListener('keydown', handleKeyDown)
+    
+    // 重新绑定地图点击事件监听器
+    if (map.value) {
+      map.value.off('click')
+      map.value.on('click', handleMapClick)
+      console.log('地图点击事件监听器已重新绑定')
+    }
+    
+    // 设置绘制状态
+    isDrawing.value = true
+    
+    // 创建绘制图层
+    drawLayer.value = L.layerGroup().addTo(map.value)
+    
+    // 根据缩放模式设置绘制
+    if (zoomMode.value === 'rectangle') {
+      setupRectangleDrawing()
+    }
+    
+    console.log('绘制模式启动成功')
+    
+  } catch (error) {
+    console.error('启动绘制模式失败:', error)
+    showZoomMessage('❌ 启动绘制模式失败', 'warning')
+    finishDrawing()
+  }
+}
+
+// 完成绘制
+const finishDrawing = () => {
+  console.log('finishDrawing被调用，当前activeMapTool:', activeMapTool.value)
+  isDrawing.value = false
+  // 不要立即重置activeMapTool，让缩放方法执行完成后再重置
+  // activeMapTool.value = ''
+  zoomMode.value = ''
+  
+  // 重新启用地图拖拽功能
+  if (map.value) {
+    map.value.dragging.enable()
+  }
+  
+  // 清除绘制图层
+  if (drawLayer.value) {
+    map.value.removeLayer(drawLayer.value)
+    drawLayer.value = null
+  }
+  
+  // 移除地图事件监听器
+  map.value.off('mousedown')
+  map.value.off('mousemove')
+  map.value.off('mouseup')
+  
+  // 移除键盘事件监听器
+  document.removeEventListener('keydown', handleKeyDown)
+  
+  // 重新绑定地图点击事件监听器
+  if (map.value) {
+    map.value.off('click')
+    map.value.on('click', handleMapClick)
+    console.log('地图点击事件监听器已重新绑定，支持按点放大和缩小功能')
+  }
+  
+  console.log('绘制模式已清理，地图点击事件已重新绑定')
+}
+
+// 取消绘制
+const cancelDrawing = () => {
+  console.log('取消绘制被调用')
+  isDrawing.value = false
+  activeMapTool.value = ''
+  zoomMode.value = ''
+  
+  // 重新启用地图拖拽功能
+  if (map.value) {
+    map.value.dragging.enable()
+  }
+  
+  // 清除绘制图层
+  if (drawLayer.value) {
+    map.value.removeLayer(drawLayer.value)
+    drawLayer.value = null
+  }
+  
+  // 移除地图事件监听器
+  map.value.off('mousedown')
+  map.value.off('mousemove')
+  map.value.off('mouseup')
+  
+  // 移除键盘事件监听器
+  document.removeEventListener('keydown', handleKeyDown)
+  
+  // 重新绑定地图点击事件监听器
+  if (map.value) {
+    map.value.off('click')
+    map.value.on('click', handleMapClick)
+    console.log('地图点击事件监听器已重新绑定')
+  }
+  
+  console.log('绘制模式已取消')
+}
+
+// 强制设置放大鼠标样式
+const forceSetZoomCursor = () => {
+  const mapElement = document.getElementById('editor-map')
+  if (mapElement) {
+    mapElement.style.cursor = 'zoom-in'
+    console.log('强制设置放大鼠标样式')
+  }
+}
+
+// 强制设置缩小鼠标样式
+const forceSetZoomOutCursor = () => {
+  const mapElement = document.getElementById('editor-map')
+  if (mapElement) {
+    mapElement.style.cursor = 'zoom-out'
+    console.log('强制设置缩小鼠标样式')
+  }
+}
+
+// 处理按点放大
+const handlePointZoom = (latlng) => {
+  if (!map.value) return
+  
+  const currentZoom = map.value.getZoom()
+  const newZoom = Math.min(currentZoom + 2, 18)
+  
+  map.value.setView(latlng, newZoom, { animate: true })
+  
+  // 重置工具状态
+  setTimeout(() => {
+    activeMapTool.value = ''
+    resetToolState()
+  }, 1000)
+}
+
+// 处理按点缩小
+const handlePointZoomOut = (latlng) => {
+  if (!map.value) return
+  
+  const currentZoom = map.value.getZoom()
+  const newZoom = Math.max(currentZoom - 2, 5)
+  
+  map.value.setView(latlng, newZoom, { animate: true })
+  
+  // 重置工具状态
+  setTimeout(() => {
+    activeMapTool.value = ''
+    resetToolState()
+  }, 1000)
+}
+
+// 处理要素识别
+const handleFeatureIdentification = (e) => {
+  if (!map.value) return
+  
+  console.log('开始处理要素识别，点击位置:', e.latlng)
+  
+  // 查找点击位置下的要素
+  const clickedFeature = findFeatureAtPoint(e.latlng)
+  console.log('找到的要素:', clickedFeature)
+  
+  if (clickedFeature) {
+    // 显示要素信息
+    showFeatureInfo(clickedFeature)
+    showZoomMessage('✅ 要素识别成功', 'success')
+  } else {
+    showZoomMessage('❌ 未找到要素', 'warning')
+  }
+}
+
+// 显示要素信息
+const showFeatureInfo = (clickedFeature) => {
+  const { type, feature, layer } = clickedFeature
+  
+  if (feature.properties) {
+    // 创建信息弹窗
+    const content = createFeatureInfoContent(feature.properties, type)
+    
+    // 获取要素位置
+    let latlng
+    if (type === 'monitoringPoints' || type === 'settlements') {
+      latlng = layer.getLatLng()
+    } else {
+      latlng = layer.getBounds().getCenter()
+    }
+    
+    // 显示弹窗
+    L.popup({
+      closeButton: true,
+      maxWidth: 300,
+      className: 'feature-info-popup'
+    })
+    .setLatLng(latlng)
+    .setContent(content)
+    .openOn(map.value)
+  }
+}
+
+// 显示缩放提示信息
+const showZoomMessage = (message, type = 'info') => {
+  // 移除之前的提示信息
+  const existingMessage = document.querySelector('.zoom-message')
+  if (existingMessage) {
+    existingMessage.remove()
+  }
+  
+  // 创建提示元素
+  const messageDiv = document.createElement('div')
+  messageDiv.className = `zoom-message zoom-message-${type}`
+  messageDiv.textContent = message
+  
+  // 添加到地图容器
+  const mapContainer = document.getElementById('editor-map')
+  if (mapContainer) {
+    mapContainer.appendChild(messageDiv)
+    
+    // 2秒后自动移除
+    setTimeout(() => {
+      if (messageDiv.parentNode) {
+        messageDiv.parentNode.removeChild(messageDiv)
+      }
+    }, 2000)
+  }
+}
+
+// 创建要素信息内容
+const createFeatureInfoContent = (properties, type) => {
+  let html = '<div class="feature-info">'
+  html += `<h4>${getLayerDisplayName(type)}信息</h4>`
+  
+  // 根据图层类型显示不同的信息
+  for (const [key, value] of Object.entries(properties)) {
+    if (value !== null && value !== undefined && value !== '') {
+      const displayName = getPropertyDisplayName(key)
+      const formattedValue = formatPropertyValue(value)
+      html += `<div class="info-row"><strong>${displayName}:</strong> ${formattedValue}</div>`
+    }
+  }
+  
+  html += '</div>'
+  return html
+}
+
 // 处理要素选择
 const handleFeatureSelection = (e) => {
   if (!map.value) return
@@ -5500,85 +6027,9 @@ const deselectFeature = (featureId, clickedFeature) => {
   console.log('要素已取消选择:', featureId, clickedFeature)
 }
 
-// 清除所有要素选择
-const clearAllFeatureSelections = () => {
-  // 移除所有高亮图层
-  featureHighlightLayers.value.forEach((highlightLayer) => {
-    if (map.value && highlightLayer) {
-      map.value.removeLayer(highlightLayer)
-    }
-  })
-  
-  // 清空选择集合和高亮图层映射
-  selectedFeatures.value.clear()
-  featureHighlightLayers.value.clear()
-  
-  console.log('已清除所有要素选择')
-}
 
-// 创建要素高亮图层
-const createFeatureHighlight = (clickedFeature) => {
-  // clickedFeature的结构是 { type: layerType, feature: foundFeature, layer }
-  const feature = clickedFeature.feature
-  const layerType = clickedFeature.type
-  const layer = clickedFeature.layer
-  
-  if (!feature || !feature.geometry) {
-    console.log('要素没有几何信息:', feature)
-    return null
-  }
-  
-  try {
-    const geometry = feature.geometry
-    const coordinates = geometry.coordinates
-    
-    console.log('创建高亮图层:', { layerType, geometryType: geometry.type, coordinates })
-    
-    if (geometry.type === 'Point') {
-      // 点要素高亮
-      const [lng, lat] = coordinates
-      const highlight = L.circleMarker([lat, lng], {
-        radius: 12,
-        fillColor: '#ff0000',
-        color: '#ffffff',
-        weight: 3,
-        opacity: 1,
-        fillOpacity: 0.8,
-        className: 'feature-highlight'
-      })
-      console.log('创建点要素高亮:', [lat, lng])
-      return highlight
-    } else if (geometry.type === 'LineString') {
-      // 线要素高亮
-      const latlngs = coordinates.map(coord => [coord[1], coord[0]])
-      const highlight = L.polyline(latlngs, {
-        color: '#ff0000',
-        weight: 6,
-        opacity: 1,
-        className: 'feature-highlight'
-      })
-      console.log('创建线要素高亮:', latlngs)
-      return highlight
-    } else if (geometry.type === 'Polygon') {
-      // 面要素高亮
-      const latlngs = coordinates[0].map(coord => [coord[1], coord[0]])
-      const highlight = L.rectangle(L.latLngBounds(latlngs), {
-        fillColor: '#ff0000',
-        color: '#ffffff',
-        weight: 3,
-        opacity: 1,
-        fillOpacity: 0.3,
-        className: 'feature-highlight'
-      })
-      console.log('创建面要素高亮:', latlngs)
-      return highlight
-    }
-  } catch (error) {
-    console.error('创建要素高亮图层失败:', error)
-  }
-  
-  return null
-}
+
+
 </script>
 
 <style scoped>
@@ -6653,13 +7104,13 @@ body {
 
 
 
-.search-video-btn {
+.play-video-btn {
   background: #f0f5ff;
   color: #2f54eb;
   border: 1px solid #adc6ff;
 }
 
-.search-video-btn:hover {
+.play-video-btn:hover {
   background: #d6e4ff;
   border-color: #85a5ff;
   transform: translateY(-2px);
@@ -6702,6 +7153,29 @@ body {
   font-weight: 600;
   color: #222;
   margin-bottom: 12px;
+  cursor: move;
+  user-select: none;
+}
+
+.render-modal-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.render-modal-reset {
+  font-size: 16px;
+  color: #666;
+  cursor: pointer;
+  user-select: none;
+  padding: 2px 4px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.render-modal-reset:hover {
+  color: #1890ff;
+  background-color: rgba(24, 144, 255, 0.1);
 }
 .render-modal-close {
   font-size: 22px;
@@ -7160,14 +7634,14 @@ body {
   cursor: default;
 }
 
+.draggable-annotation-popup .leaflet-popup-tip {
+  display: none;
+}
+
 .draggable-annotation-popup .leaflet-popup-content-wrapper {
   background: transparent;
   box-shadow: none;
   border-radius: 0;
-}
-
-.draggable-annotation-popup .leaflet-popup-tip {
-  display: none;
 }
 
 .draggable-annotation-popup .leaflet-popup-close-button {
@@ -7484,7 +7958,7 @@ body {
   background: #ff7875;
 }
 
-/* 水库参数面板样式 */
+/* 水库基本信息面板样式 */
 .reservoir-params-panel {
   position: fixed;
   top: 50%;
@@ -7600,7 +8074,7 @@ body {
 /* 防洪历史面板样式 */
 .flood-history-panel {
   position: fixed;
-  top: 50%;
+  top: 65%;
   right: 32px;
   transform: translateY(-50%);
   width: 320px;
@@ -7737,6 +8211,17 @@ body {
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+/* 拖动状态样式 */
+.render-modal.dragging {
+  transition: none !important;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+}
+
+.render-modal.dragging .render-modal-header {
+  background: linear-gradient(135deg, #f0f8ff 0%, #e6f3ff 100%);
+  border-radius: 14px 14px 0 0;
 }
 
 .legend-item {

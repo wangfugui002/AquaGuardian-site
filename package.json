@@ -19,7 +19,9 @@
     "vue-router": "^4.5.1"
   },
   "devDependencies": {
+    "@types/node": "^24.3.0",
     "@vitejs/plugin-vue": "^4.3.4",
+    "@vue/runtime-core": "^3.5.19",
     "vite": "^4.4.9"
   },
   "keywords": [
