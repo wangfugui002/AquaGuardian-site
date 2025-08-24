@@ -691,10 +691,8 @@ export default {
                 }
                 
                 // 在弹窗底部添加水位输入与分析按钮
-                const savedLevel = readCurrentLevel(reservoirName);
-                const inputValue = savedLevel !== null ? savedLevel : '';
                 popupContent += `<div style="margin-top:8px;">
-                  <input id="water-input-${uid}" type="number" step="0.01" placeholder="请输入当前水位" value="${inputValue}" style="width: 100%; box-sizing: border-box;" />
+                  <input id="water-input-${uid}" type="number" step="0.01" placeholder="请输入当前水位" value="" style="width: 100%; box-sizing: border-box;" />
                   <button id="water-analyze-${uid}" style="margin-top:6px; display:flex; align-items:center; gap:6px;">
                     <span>🔍</span><span>预警分析</span>
                   </button>
@@ -1829,6 +1827,28 @@ export default {
         return v !== null && v !== '' && !isNaN(Number(v)) ? Number(v) : null;
       } catch (e) { return null; }
     };
+    
+    // 清空所有水库的水位数据
+    const clearAllReservoirLevels = () => {
+      try {
+        // 获取所有水库名称
+        const reservoirNames = [
+          '白河堡水库', '密云水库', '官厅水库', '怀柔水库', '半城子水库',
+          '北台上水库', '崇青水库', '大宁水库', '大水峪水库', '海子水库',
+          '黄松峪水库', '沙厂水库', '十三陵水库', '桃峪口水库', '斋堂水库',
+          '珠窝水库'
+        ];
+        
+        // 清空每个水库的水位数据
+        reservoirNames.forEach(name => {
+          localStorage.removeItem(storageKeyForReservoir(name));
+        });
+        
+        console.log('已清空所有水库的水位数据');
+      } catch (e) {
+        console.error('清空水库水位数据失败:', e);
+      }
+    };
 
     // 处理应急措施点击跳转
     const handleMeasureClick = (reservoirName, planType, index) => {
@@ -1995,6 +2015,9 @@ export default {
     };
 
     onMounted(() => {
+      // 页面加载时清空所有水库的水位数据
+      clearAllReservoirLevels();
+      
       // 确保地图容器已渲染后再初始化地图
       setTimeout(() => {
         initMap();
