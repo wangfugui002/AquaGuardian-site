@@ -62,14 +62,25 @@
       
 
       
-      <!-- 数据信息面板 -->
+      <!-- 服务信息面板 -->
       <div class="data-info">
-        <h4>数据统计</h4>
-        <p>区县数量: {{ dataStats.districts }}</p>
-        <p>水系线条: {{ dataStats.waterLines }}</p>
-        <p>水系面积: {{ dataStats.waterAreas }}</p>
-        <p>水库数量: {{ dataStats.reservoirs }}</p>
-        <p>居民地数量: {{ dataStats.settlements }}</p>
+        <h4>地图服务信息</h4>
+        <div class="info-item">
+          <span class="info-label">服务站点:</span>
+          <span class="info-value">yzcm.dev.local:6443</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">服务软件:</span>
+          <span class="info-value">GeoScene</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">服务类型:</span>
+          <span class="info-value">地图服务 (MapServer)</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">协议支持:</span>
+          <span class="info-value">REST / SOAP</span>
+        </div>
       </div>
       
       <!-- 加载提示 -->
@@ -132,17 +143,75 @@ export default {
       settlements: 0
     })
     
-    // 初始化地图 - 去除背景图，与WaterPollutionSimulation.vue保持一致
+    // 初始化地图 - 使用REST服务
     const initMap = () => {
       map.value = L.map('map', {
         zoomControl: false,
         attributionControl: false
       }).setView([39.9042, 116.4074], 10)
       
-      // 不加载任何在线底图，保持白色背景
+      // 使用提供的REST URL加载地图服务
+      const restUrl = 'https://yzcm.dev.local:6443/geoscene/rest/services/地图/MapServer'
+      
+      try {
+        // 创建WMS图层
+        const wmsLayer = L.tileLayer.wms(restUrl, {
+          layers: '0', // 图层索引，通常从0开始
+          format: 'image/png',
+          transparent: true,
+          version: '1.3.0',
+          crs: L.CRS.EPSG3857, // 使用Web墨卡托投影
+          maxZoom: 18,
+          minZoom: 1
+        })
+        
+        wmsLayer.addTo(map.value)
+        
+        // 添加错误处理
+        wmsLayer.on('tileerror', function(e) {
+          console.error('地图瓦片加载失败:', e)
+          // 如果WMS加载失败，尝试使用备用方案
+          loadFallbackMap()
+        })
+        
+        wmsLayer.on('load', function() {
+          console.log('地图服务加载成功')
+          loading.value = false
+        })
+        
+        // 设置超时处理
+        setTimeout(() => {
+          if (loading.value) {
+            console.log('地图加载超时，尝试备用方案')
+            loadFallbackMap()
+          }
+        }, 10000) // 10秒超时
+        
+      } catch (error) {
+        console.error('地图初始化失败:', error)
+        loadFallbackMap()
+      }
     }
     
-    // 加载GeoJSON数据
+    // 备用地图加载方案
+    const loadFallbackMap = () => {
+      try {
+        // 如果REST服务无法加载，使用OpenStreetMap作为备用
+        const fallbackLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '© OpenStreetMap contributors',
+          maxZoom: 18
+        })
+        
+        fallbackLayer.addTo(map.value)
+        console.log('使用备用地图服务')
+        loading.value = false
+      } catch (error) {
+        console.error('备用地图加载也失败:', error)
+        loading.value = false
+      }
+    }
+    
+    // 加载GeoJSON数据 - 保留作为叠加图层
     const loadGeoJSONData = async () => {
       try {
         const dataFiles = {
@@ -418,36 +487,43 @@ export default {
   bottom: 20px;
   left: 20px;
   background: white;
-  padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  padding: 15px;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   z-index: 1000;
-  max-width: 250px;
+  max-width: 280px;
 }
 
 .data-info h4 {
-  margin: 0 0 15px 0;
+  margin: 0 0 10px 0;
   color: #333;
-  font-size: 1.1rem;
+  font-size: 0.95rem;
 }
 
-.data-info p {
-  margin: 5px 0;
-  font-size: 0.9rem;
-  color: #666;
+.info-item {
+  margin-bottom: 8px;
+  font-size: 0.8rem;
+  line-height: 1.3;
 }
 
-.loading {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: rgba(0, 0, 0, 0.8);
-  color: white;
-  padding: 20px 40px;
-  border-radius: 8px;
-  z-index: 2000;
-  font-size: 1.1rem;
+.info-label {
+  font-weight: bold;
+  color: #555;
+  margin-right: 6px;
+  display: inline-block;
+  min-width: 65px;
+}
+
+.info-value {
+  color: #333;
+  word-break: break-all;
+  display: inline-block;
+  max-width: 200px;
+}
+
+.info-value:hover {
+  text-decoration: underline;
+  color: #007bff;
 }
 
 @media (max-width: 768px) {
@@ -459,8 +535,8 @@ export default {
   }
   
   .data-info {
-    max-width: 200px;
-    padding: 15px;
+    max-width: 240px;
+    padding: 12px;
     bottom: 10px;
     left: 10px;
   }
@@ -470,7 +546,19 @@ export default {
   }
   
   .data-info h4 {
-    font-size: 1rem;
+    font-size: 0.9rem;
+  }
+  
+  .info-item {
+    font-size: 0.75rem;
+  }
+  
+  .info-label {
+    min-width: 60px;
+  }
+  
+  .info-value {
+    max-width: 170px;
   }
 }
 </style> 

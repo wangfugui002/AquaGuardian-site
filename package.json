@@ -13,7 +13,7 @@
     "axios": "^1.5.0",
     "echarts": "^5.6.0",
     "element-plus": "^2.10.6",
-    "esri-leaflet": "^3.0.17",
+    "esri-leaflet": "^3.0.18",
     "leaflet": "^1.9.4",
     "vue": "^3.3.4",
     "vue-router": "^4.5.1"
