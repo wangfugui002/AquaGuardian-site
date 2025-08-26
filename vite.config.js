@@ -3,9 +3,10 @@ import vue from '@vitejs/plugin-vue'
 
 export default defineConfig({
   plugins: [vue()],
-  base: '/AquaGuardian-site/', // 修复为正确的GitHub Pages路径
+  // 本地开发时不需要base路径，生产构建时会自动处理
+  base: process.env.NODE_ENV === 'production' ? '/AquaGuardian-site/' : '/',
   server: {
-    port: 3000,
+    port: 3002, // 修改为您使用的端口
     open: true,
     proxy: {
       '/api': {
