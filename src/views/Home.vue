@@ -5,6 +5,14 @@
     <div class="map-container">
       <div id="map" style="width: 100%; height: 100%;"></div>
       
+      <!-- 测试内容 - 确保Vue应用正常工作 -->
+      <div class="test-content" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); z-index: 1000;">
+        <h2>Vue应用测试</h2>
+        <p>如果您看到这个内容，说明Vue应用正在正常工作！</p>
+        <p>当前时间: {{ currentTime }}</p>
+        <button @click="refreshTime">刷新时间</button>
+      </div>
+      
       <!-- 图层控制面板 -->
       <div class="layer-control-panel">
         <h3>图层控制</h3>
@@ -73,6 +81,12 @@ export default {
     const map = ref(null)
     const loading = ref(true)
     const systemTitle = ref('环境风险分析与模拟系统')
+    const currentTime = ref(new Date().toLocaleString())
+    
+    // 刷新时间函数
+    const refreshTime = () => {
+      currentTime.value = new Date().toLocaleString()
+    }
     
     // 图层状态管理
     const layers = reactive({
@@ -353,7 +367,9 @@ export default {
       map,
       systemTitle,
       layers,
-      toggleLayer
+      toggleLayer,
+      currentTime,
+      refreshTime
     }
   }
 }

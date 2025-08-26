@@ -3,7 +3,7 @@ import vue from '@vitejs/plugin-vue'
 
 export default defineConfig({
   plugins: [vue()],
-  base: '/', // 修改为根路径，适合main分支部署
+  base: '/AquaGuardian-site/', // 修复为正确的GitHub Pages路径
   server: {
     port: 3000,
     open: true,
