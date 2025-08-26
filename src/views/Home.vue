@@ -19,7 +19,7 @@
             <input type="checkbox" v-model="layers.waterAreas" @change="toggleLayer('waterAreas')">
             水系面数据
           </label>
-        </div>
+          </div>
         <div class="layer-control">
           <label>
             <input type="checkbox" v-model="layers.waterLines" @change="toggleLayer('waterLines')">
@@ -112,7 +112,7 @@ export default {
       try {
         // 首先加载基础底图
         loadBaseMap()
-        
+    
         // 加载北京区县界数据
         const districtUrl = 'https://yzcm.dev.local/sever/rest/services/Hosted/北京区县界/FeatureServer'
         loadDistrictData(districtUrl)
@@ -145,8 +145,8 @@ export default {
           throw new Error(`HTTP error! status: ${response.status}`)
         }
         
-        const data = await response.json()
-        
+            const data = await response.json()
+            
         // 创建区县界GeoJSON图层
         const districtLayer = L.geoJSON(data, {
           style: {
@@ -156,13 +156,13 @@ export default {
             color: '#333333',
             fillOpacity: 0.1
           },
-          onEachFeature: (feature, layer) => {
-            if (feature.properties) {
+              onEachFeature: (feature, layer) => {
+                if (feature.properties) {
               layer.bindPopup(getDistrictPopupContent(feature.properties))
-            }
-          }
-        })
-        
+                }
+              }
+            })
+            
         layerObjects.districts = districtLayer
         districtLayer.addTo(map.value)
         console.log('北京区县界数据加载成功')
@@ -194,8 +194,8 @@ export default {
           onEachFeature: (feature, layer) => {
             if (feature.properties) {
               layer.bindPopup(getWaterLinePopupContent(feature.properties))
+              }
             }
-          }
         })
         
         layerObjects.waterLines = waterLineLayer
@@ -226,8 +226,8 @@ export default {
           style: {
             fillColor: '#29B6F6',
             weight: 1,
-            opacity: 0.9,
-            color: '#0288D1',
+          opacity: 0.9,
+          color: '#0288D1',
             fillOpacity: 0.6
           },
           onEachFeature: (feature, layer) => {
@@ -262,11 +262,11 @@ export default {
         const reservoirLayer = L.geoJSON(data, {
           style: {
             fillColor: '#26C6DA',
-            weight: 1.5,
-            opacity: 0.9,
-            color: '#00ACC1',
-            fillOpacity: 0.8
-          },
+          weight: 1.5,
+          opacity: 0.9,
+          color: '#00ACC1',
+          fillOpacity: 0.8
+        },
           onEachFeature: (feature, layer) => {
             if (feature.properties) {
               layer.bindPopup(getReservoirPopupContent(feature.properties))

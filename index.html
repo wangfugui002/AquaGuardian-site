@@ -2,13 +2,150 @@
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="./vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>北京水污染模拟系统</title>
+    
+    <!-- 网站图标 -->
+    <link rel="icon" type="image/svg+xml" href="./public/favicon.svg" />
+    <link rel="apple-touch-icon" href="./public/favicon.svg" />
+    <link rel="manifest" href="./public/manifest.json" />
+    
+    <!-- 页面标题和描述 -->
+    <title>环境风险分析与模拟系统 - 北京水污染模拟</title>
+    <meta name="description" content="基于Vue.js的环境风险分析与模拟系统，提供水污染模拟、地图可视化、数据分析等功能" />
+    <meta name="keywords" content="环境风险,水污染模拟,地图可视化,Vue.js,北京,地理信息系统" />
+    <meta name="author" content="AquaGuardian Team" />
+    
+    <!-- Open Graph 社交媒体分享 -->
+    <meta property="og:title" content="环境风险分析与模拟系统" />
+    <meta property="og:description" content="基于Vue.js的环境风险分析与模拟系统，提供水污染模拟、地图可视化、数据分析等功能" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://wangfugui002.github.io/AquaGuardian-site/" />
+    <meta property="og:image" content="./images/logo.png" />
+    
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="环境风险分析与模拟系统" />
+    <meta name="twitter:description" content="基于Vue.js的环境风险分析与模拟系统" />
+    
+    <!-- 安全头 -->
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: https:; img-src 'self' data: blob: https:; font-src 'self' data: https:;" />
+    
+    <!-- 预加载关键资源 -->
+    <link rel="preload" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" as="style" />
+    <link rel="preload" href="./src/main.js" as="script" />
+    
+    <!-- 外部样式表 -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <!-- 主题色 -->
+    <meta name="theme-color" content="#1976D2" />
+    <meta name="msapplication-TileColor" content="#1976D2" />
+    
+    <!-- 加载动画样式 -->
+    <style>
+      /* 页面加载动画 */
+      .loading-screen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(135deg, #1976D2 0%, #42A5F5 100%);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+        transition: opacity 0.5s ease-out;
+      }
+      
+      .loading-screen.hidden {
+        opacity: 0;
+        pointer-events: none;
+      }
+      
+      .loading-logo {
+        width: 80px;
+        height: 80px;
+        background: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      }
+      
+      .loading-logo::before {
+        content: "🌊";
+        font-size: 40px;
+      }
+      
+      .loading-text {
+        color: white;
+        font-size: 18px;
+        font-weight: 500;
+        margin-bottom: 10px;
+      }
+      
+      .loading-spinner {
+        width: 40px;
+        height: 40px;
+        border: 3px solid rgba(255,255,255,0.3);
+        border-top: 3px solid white;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+      
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      
+      /* 隐藏加载动画 */
+      .loading-screen.hidden {
+        display: none;
+      }
+    </style>
   </head>
   <body>
+    <!-- 加载动画 -->
+    <div id="loading-screen" class="loading-screen">
+      <div class="loading-logo"></div>
+      <div class="loading-text">环境风险分析与模拟系统</div>
+      <div class="loading-spinner"></div>
+    </div>
+    
+    <!-- Vue应用根元素 -->
     <div id="app"></div>
+    
+    <!-- 主脚本 -->
     <script type="module" src="./src/main.js"></script>
+    
+    <!-- 加载完成后的处理 -->
+    <script>
+      // 页面加载完成后隐藏加载动画
+      window.addEventListener('load', function() {
+        setTimeout(function() {
+          const loadingScreen = document.getElementById('loading-screen');
+          if (loadingScreen) {
+            loadingScreen.classList.add('hidden');
+          }
+        }, 1000); // 延迟1秒隐藏，确保Vue应用完全加载
+      });
+      
+      // 如果Vue应用加载失败，显示错误信息
+      window.addEventListener('error', function(e) {
+        console.error('应用加载错误:', e.error);
+        const loadingScreen = document.getElementById('loading-screen');
+        if (loadingScreen) {
+          loadingScreen.innerHTML = `
+            <div class="loading-logo"></div>
+            <div class="loading-text" style="color: #ff6b6b;">加载失败，请刷新页面重试</div>
+          `;
+        }
+      });
+    </script>
   </body>
 </html> 

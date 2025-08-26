@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+
+# 禁止访问API和私有文件
+Disallow: /api/
+Disallow: /admin/
+Disallow: /.env
+Disallow: /config/
+
+# 网站地图
+Sitemap: https://wangfugui002.github.io/AquaGuardian-site/sitemap.xml 
