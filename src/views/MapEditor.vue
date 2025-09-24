@@ -1248,6 +1248,37 @@ const activateZoomIn = () => {
   if (map.value) {
     map.value.dragging.disable()
     console.log('已禁用地图拖拽功能')
+    // 设置一次性点击监听，实现“点一下就放大”
+    pendingPointZoom.value = true
+    const leafletOnce = (e) => {
+      console.log('Leaflet 一次性点击触发(放大):', e.latlng)
+      if (!pendingPointZoom.value) return
+      pendingPointZoom.value = false
+      map.value.off('click', leafletOnce)
+      // 同时移除容器捕获监听
+      const container = map.value.getContainer()
+      container && container.removeEventListener('click', containerOnce, true)
+      handleZoomInClick(e.latlng)
+    }
+    const containerOnce = (ev) => {
+      console.log('容器捕获点击触发(放大)')
+      if (!pendingPointZoom.value) return
+      pendingPointZoom.value = false
+      // 计算点击位置对应经纬度
+      const latlng = map.value.mouseEventToLatLng(ev)
+      // 移除两个监听
+      const container = map.value.getContainer()
+      container && container.removeEventListener('click', containerOnce, true)
+      map.value.off('click', leafletOnce)
+      // 阻止后续处理，避免重复
+      ev.preventDefault()
+      ev.stopPropagation()
+      handleZoomInClick(latlng)
+    }
+    map.value.off('click', leafletOnce)
+    map.value.on('click', leafletOnce)
+    const container = map.value.getContainer()
+    container && container.addEventListener('click', containerOnce, { once: true, capture: true })
   }
   
   // 强制设置鼠标样式
@@ -1282,6 +1313,34 @@ const activateZoomOut = () => {
   if (map.value) {
     map.value.dragging.disable()
     console.log('已禁用地图拖拽功能')
+    // 设置一次性点击监听，实现“点一下就缩小”
+    pendingPointZoomOut.value = true
+    const leafletOnce = (e) => {
+      console.log('Leaflet 一次性点击触发(缩小):', e.latlng)
+      if (!pendingPointZoomOut.value) return
+      pendingPointZoomOut.value = false
+      map.value.off('click', leafletOnce)
+      // 同时移除容器捕获监听
+      const container = map.value.getContainer()
+      container && container.removeEventListener('click', containerOnce, true)
+      handleZoomOutClick(e.latlng)
+    }
+    const containerOnce = (ev) => {
+      console.log('容器捕获点击触发(缩小)')
+      if (!pendingPointZoomOut.value) return
+      pendingPointZoomOut.value = false
+      const latlng = map.value.mouseEventToLatLng(ev)
+      const container = map.value.getContainer()
+      container && container.removeEventListener('click', containerOnce, true)
+      map.value.off('click', leafletOnce)
+      ev.preventDefault()
+      ev.stopPropagation()
+      handleZoomOutClick(latlng)
+    }
+    map.value.off('click', leafletOnce)
+    map.value.on('click', leafletOnce)
+    const container = map.value.getContainer()
+    container && container.addEventListener('click', containerOnce, { once: true, capture: true })
   }
   
   // 强制设置鼠标样式
@@ -3354,6 +3413,9 @@ const showZoomOutDropdown = ref(false)
 const zoomMode = ref('') // 'rectangle'
 const isDrawing = ref(false)
 const drawLayer = ref(null)
+// 单次按点缩放的挂起标记，避免与全局点击重复触发
+const pendingPointZoom = ref(false)
+const pendingPointZoomOut = ref(false)
 
 // 放大菜单相关函数
 const toggleZoomMenu = () => {
@@ -5493,6 +5555,10 @@ const handleMapClick = (e) => {
   if (!map.value) return
   
   console.log('地图点击事件:', e.latlng)
+  // 若存在一次性按点缩放挂起，则交由一次性处理器处理，避免重复
+  if (pendingPointZoom.value || pendingPointZoomOut.value) {
+    return
+  }
   
   // 根据当前激活的工具执行不同的操作
   switch (activeMapTool.value) {
@@ -5534,11 +5600,10 @@ const startDrawingMode = () => {
   try {
     // 先清理之前的绘制状态，但不重置activeMapTool
     isDrawing.value = false
-    zoomMode.value = ''
     
-    // 重新启用地图拖拽功能
+    // 绘制模式下禁用地图拖拽，避免与拉框冲突
     if (map.value) {
-      map.value.dragging.enable()
+      map.value.dragging.disable()
     }
     
     // 清理之前的绘制图层
@@ -5703,6 +5768,35 @@ const handlePointZoomOut = (latlng) => {
     activeMapTool.value = ''
     resetToolState()
   }, 1000)
+}
+
+// 将地图点击事件中的按点放大/缩小委托到通用实现
+const handleZoomInClick = (latlng) => {
+  try {
+    handlePointZoom(latlng)
+    showZoomMessage('✅ 已按点放大', 'success')
+    // 完成后恢复拖拽与光标
+    if (map.value) {
+      map.value.dragging.enable()
+    }
+  } catch (error) {
+    console.error('按点放大失败:', error)
+    showZoomMessage('❌ 放大失败', 'warning')
+  }
+}
+
+const handleZoomOutClick = (latlng) => {
+  try {
+    handlePointZoomOut(latlng)
+    showZoomMessage('✅ 已按点缩小', 'success')
+    // 完成后恢复拖拽与光标
+    if (map.value) {
+      map.value.dragging.enable()
+    }
+  } catch (error) {
+    console.error('按点缩小失败:', error)
+    showZoomMessage('❌ 缩小失败', 'warning')
+  }
 }
 
 // 处理要素识别
